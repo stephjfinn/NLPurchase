@@ -1,3 +1,5 @@
+// helps manage database connections
+
 var MongoClient = require('mongodb').MongoClient
 
 var state = {

@@ -13,6 +13,7 @@
     "ebay": "0.0.1",
     "ebay-api": "^1.13.1",
     "mongodb": "^2.2.22",
+    "mongoose": "^4.8.5",
     "node-wit": "^4.2.0",
     "restify": "^4.3.0"
   }

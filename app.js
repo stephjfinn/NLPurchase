@@ -1,41 +1,49 @@
+//NOTE TO SELF: shift + alt + f = format indentation
+
 var restify = require('restify');
 var builder = require('botbuilder');
 var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var ObjectId = require('mongodb').ObjectID;
-var url = 'mongodb://localhost:27017/test';
+var url = '***REMOVED***';
 var ebay = require('ebay-api')
 const {Wit, log} = require('node-wit');
 var greetingArray = ["Hi! What can I help you with today?",
-                    "Hello, I'm NLPurchase! What can I do for you?",
-                    "Hey friend, what are you looking for?"];
+    "Hello, I'm NLPurchase! What can I do for you?",
+    "Hey friend, what are you looking for?"];
+var server = restify.createServer();
+var db = require('./db')
 
-//connect using the MongoClient to a running mongod instance by specifying the MongoDB uri
-//example: the following code connects to a MongoDB instance that runs on the localhost interface on port 27017
-//and switches to the test database
+var connect = db.connect('***REMOVED***', function (err) {
+    if (err) {
+        console.log('Unable to connect to Mongo.')
+        process.exit(1)
+    } else {
+        //setup restify server
+        server.listen(80, function () {
+            console.log('%s listening to %s', server.name, server.url);
+        });
+        //clear current database
+    }
+})
 
-var db = MongoClient.connect(url, function(err, db) {
-    assert.equal(null, err);
-    console.log("Connected correctly to server");
-    testcollection = db.collection('test');
-    testcollection.remove();
-});
-
+connect()
+.then()
 //EBAY
 var params = {
-  keywords: "black women's ladies shoes",
-  // add additional fields
-  outputSelector: ['AspectHistogram'],
-  paginationInput: {
-    entriesPerPage: 10
-  },
-  itemFilter: [
-    {name: 'FreeShippingOnly', value: true},
-    {name: 'MaxPrice', value: '150'},
-    {name: 'MinPrice', value: '20'},
-    {name: 'ListingType', value: 'FixedPrice'},
-    {name: 'TopRatedSellerOnly', value: true}
-  ],
+    keywords: "black women's ladies shoes",
+    // add additional fields
+    outputSelector: ['AspectHistogram'],
+    paginationInput: {
+        entriesPerPage: 10
+    },
+    itemFilter: [
+        { name: 'FreeShippingOnly', value: true },
+        { name: 'MaxPrice', value: '150' },
+        { name: 'MinPrice', value: '20' },
+        { name: 'ListingType', value: 'FixedPrice' },
+        { name: 'TopRatedSellerOnly', value: true }
+    ],
 };
 
 ebay.xmlRequest({
@@ -44,30 +52,30 @@ ebay.xmlRequest({
     appId: 'Stephani-NLPurcha-PRD-2cd429718-0d5ba0c3',
     params: params,
     parser: ebay.parseResponseJson    // (default)
-  },
-  // gets all the items together in a merged array
-  function itemsCallback(error, itemsResponse) {
-      if (error) throw error;
-      var items = itemsResponse.searchResult.item;
-      console.log('Found', items.length, 'items');
-      for (var i = 0; i < items.length; i++) {
-          console.log('- ' + items[i].title);
-          var insertDocument = function(db, callback) {
-              testcollection.insertOne({
-                  "gender" : "f",
-                  "category" : "shoes",
-                  "colour" : "black",
-                  "title" : items[i].title,
-                  "subcategory" : items[i].primaryCategory.categoryName,
-                  "pictureURL" : items[i].galleryURL,
-                  "price" : items[i].sellingStatus.currentPrice.amount
-                }, function(err, result) {
+},
+    // gets all the items together in a merged array
+    function itemsCallback(error, itemsResponse) {
+        if (error) throw error;
+        var items = itemsResponse.searchResult.item;
+        console.log('Found', items.length, 'items');
+        for (var i = 0; i < items.length; i++) {
+            console.log('- ' + items[i].title);
+            var insertDocument = function (database, callback) {
+                testcollection.insertOne({
+                    "gender": "f",
+                    "category": "shoes",
+                    "colour": "black",
+                    "title": items[i].title,
+                    "subcategory": items[i].primaryCategory.categoryName,
+                    "pictureURL": items[i].galleryURL,
+                    "price": items[i].sellingStatus.currentPrice.amount
+                }, function (err, result) {
                     assert.equal(err, null);
                     console.log("Inserted a document into the test collection");
                     callback();
                 });
             };
-            insertDocument(db, function() {
+            insertDocument(database, function () {
             });
         }
     }
@@ -75,11 +83,7 @@ ebay.xmlRequest({
 
 //**bot setup
 
-//setup restify server
-var server = restify.createServer();
-server.listen(80, function () {
-   console.log('%s listening to %s', server.name, server.url); 
-});
+
 
 //create chat bot
 var connector = new builder.ChatConnector({
@@ -90,22 +94,22 @@ var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
 
 const client = new Wit({
-  accessToken: '***REMOVED***',
-  actions: {
-    send(request, response) {
-      return new Promise(function(resolve, reject) {
-        console.log(JSON.stringify(response));
-        return resolve();
-      });
+    accessToken: '***REMOVED***',
+    actions: {
+        send(request, response) {
+            return new Promise(function (resolve, reject) {
+                console.log(JSON.stringify(response));
+                return resolve();
+            });
+        },
+        myAction({sessionId, context, text, entities}) {
+            console.log(`Session ${sessionId} received ${text}`);
+            console.log(`The current context is ${JSON.stringify(context)}`);
+            console.log(`Wit extracted ${JSON.stringify(entities)}`);
+            return Promise.resolve(context);
+        }
     },
-    myAction({sessionId, context, text, entities}) {
-      console.log(`Session ${sessionId} received ${text}`);
-      console.log(`The current context is ${JSON.stringify(context)}`);
-      console.log(`Wit extracted ${JSON.stringify(entities)}`);
-      return Promise.resolve(context);
-    }
-  },
-  logger: new log.Logger(log.DEBUG) // optional
+    logger: new log.Logger(log.DEBUG) // optional
 });
 
 //bot dialog
@@ -113,35 +117,43 @@ const client = new Wit({
 bot.dialog('/', function (session) {
     session.sendTyping();
     client.message(session.message.text, {})
-    .then((data) => {
-        switch(data.entities.intent[0].value) {
-            case "greeting":
-                var randomIndex = Math.floor(Math.random() * greetingArray.length); 
-                var randomGreeting = greetingArray[randomIndex];
-                session.send(randomGreeting);
-                break;
-            case "search":
-                //check if search contains colour, object or gender parameters
-                //if it's missing the gender parameter start getGender dialog & return here
-                //(randomly?) select in mongodb based on parameters
+        .then((data) => {
+            switch (data.entities.intent[0].value) {
+                case "greeting":
+                    var products = products.all(function (err) {
+                        if (err) {
+                            console.log('Unable to return products.')
+                            console.log(err)
+                        } else {
+                           session.send(products)
+                        }
+                    })
+                    /*var randomIndex = Math.floor(Math.random() * greetingArray.length);
+                    var randomGreeting = greetingArray[randomIndex];
+                    session.send(randomGreeting);*/
+                    break;
+                case "search":
+                    //check if search contains colour, object or gender parameters
+                    //if it's missing the gender parameter start getGender dialog & return here
+                    //(randomly?) select in mongodb based on parameters
 
-                //var cards = getCardsAttachments(session);
+                    //var cards = getCardsAttachments(session);
 
-                var findDocument = function(db, callback) {
-                    testcollection.find({
-                        "gender" : "f",
-                        "category" : "shoes",
-                        "colour" : "black"
-                    }, function(err, cursor) {
-                        assert.equal(err, null);
-                        console.log("found 1 document");
-                        cursor.toArray(callback);
+                    var findDocument = function (database, callback) {
+                        testcollection.find({
+                            "gender": "f",
+                            "category": "shoes",
+                            "colour": "black"
+                        }, function (err, cursor) {
+                            assert.equal(err, null);
+                            console.log("found 1 document");
+                            cursor.toArray(callback);
+                        });
+                    };
+                    var itemArray = findDocument(db, function () {
                     });
-                };
-                var itemArray = findDocument(db, function() {
-                });
 
-                console.log(itemArray);
+                    console.log(itemArray);
 
                 //var cards = getCardsAttachments(session, title, subtitle, image);
 
@@ -150,9 +162,9 @@ bot.dialog('/', function (session) {
                     .attachmentLayout(builder.AttachmentLayout.carousel)
                     .attachments(cards);
                 session.send(reply);*/
-        }
-    })
-    .catch(console.error);
+            }
+        })
+        .catch(console.error);
     /*session.send("Hello!");
     var reply;
     var callback = function (result) {
