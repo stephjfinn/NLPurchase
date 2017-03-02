@@ -8,6 +8,9 @@ var greetingArray = ["Hi! What can I help you with today?",
     "Hello, I'm NLPurchase! What can I do for you?",
     "Hey friend, what are you looking for?"];
 var server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 80, function() {
+    console.log('%s listening to %s', server.name, server.url);
+});
 var db = require('./db');
 var product = require('./controllers/products')
 
@@ -61,14 +64,13 @@ ebay.xmlRequest({
             db_item["url"] = items[i].galleryURL;
             db_item["price"] = items[i].sellingStatus.currentPrice.amount;
 
-            product.insert(db_item, function(product) {
+            product.insert(db_item, function (product) {
                 console.log("Inserted 1 product");
             })
         }
     }
 );
 
-/*
 //**bot setup
 
 
@@ -90,7 +92,7 @@ const client = new Wit({
                 return resolve();
             });
         },
-        myAction({sessionId, context, text, entities}) {
+        myAction({ sessionId, context, text, entities }) {
             console.log(`Session ${sessionId} received ${text}`);
             console.log(`The current context is ${JSON.stringify(context)}`);
             console.log(`Wit extracted ${JSON.stringify(entities)}`);
@@ -108,14 +110,6 @@ bot.dialog('/', function (session) {
         .then((data) => {
             switch (data.entities.intent[0].value) {
                 case "greeting":
-                    var products = products.all(function (err) {
-                        if (err) {
-                            console.log('Unable to return products.')
-                            console.log(err)
-                        } else {
-                           session.send(products)
-                        }
-                    })
                     var randomIndex = Math.floor(Math.random() * greetingArray.length);
                     var randomGreeting = greetingArray[randomIndex];
                     session.send(randomGreeting);
@@ -126,34 +120,31 @@ bot.dialog('/', function (session) {
                     //(randomly?) select in mongodb based on parameters
 
                     //var cards = getCardsAttachments(session);
+                    var reply;
 
-                    var findDocument = function (database, callback) {
-                        testcollection.find({
-                            "gender": "f",
-                            "category": "shoes",
-                            "colour": "black"
-                        }, function (err, cursor) {
-                            assert.equal(err, null);
-                            console.log("found 1 document");
-                            cursor.toArray(callback);
-                        });
-                    };
-                    var itemArray = findDocument(db, function () {
-                    });
-
-                    console.log(itemArray);
-
-                //var cards = getCardsAttachments(session, title, subtitle, image);
+                    product.all(function (products) {
+                        var sendReply = function (reply) {
+                            session.send(reply);
+                        }
+                        var getReply = function (cards, callback) {
+                            var reply = new builder.Message(session)
+                            .attachmentLayout(builder.AttachmentLayout.carousel)
+                            .attachments(cards);
+                            callback(reply);
+                        }
+                        var getCards = function(callback) {
+                            var cards = getCardsAttachments(products);
+                            callback(cards, sendReply);
+                        };
+                        getCards(getReply);
+                    })
 
                 // create reply with Carousel AttachmentLayout
-                var reply = new builder.Message(session)
-                    .attachmentLayout(builder.AttachmentLayout.carousel)
-                    .attachments(cards);
-                session.send(reply);
+
             }
         })
         .catch(console.error);
-    session.send("Hello!");
+    /*session.send("Hello!");
     var reply;
     var callback = function (result) {
         reply = result;
@@ -166,9 +157,28 @@ bot.dialog('/', function (session) {
         session.send(reply.entities.intent);
     };
     utils.getWitIntent(session.message.text, callback);
+    */
 });
 
-function getCardsAttachments(session) {
+function getCardsAttachments(products, session) {
+    var cards = [];
+
+    for (var i = 0; i < 9; i++) {
+        var newcard = new builder.HeroCard(session)
+            .title(products[i].title)
+            .images([
+                builder.CardImage.create(session, products[i].pictureURL)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, 'https://google.ie', 'Add to cart'),
+                builder.CardAction.openUrl(session, 'https://google.ie', 'More like this')
+            ])
+        cards.push(newcard)
+    }
+    
+    return cards;
+
+    /*
     return [
         new builder.HeroCard(session)
             .title('Azure')
@@ -214,5 +224,5 @@ function getCardsAttachments(session) {
                 builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/cognitive-services/', 'Learn More')
             ])
     ];
+    */
 }
-*/
