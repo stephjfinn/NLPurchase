@@ -2,17 +2,17 @@
 
 var restify = require('restify');
 var builder = require('botbuilder');
-var ebay = require('ebay-api')
 const { Wit, log } = require('node-wit');
 var greetingArray = ["Hi! What can I help you with today?",
     "Hello, I'm NLPurchase! What can I do for you?",
     "Hey friend, what are you looking for?"];
 var server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 80, function() {
+server.listen(process.env.port || process.env.PORT || 80, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 var db = require('./db');
 var product = require('./controllers/products')
+var ebay = require('./ebay')
 
 //drop collection
 /*product.clear();*/
@@ -22,54 +22,29 @@ var product = require('./controllers/products')
     console.log(products);
 })*/
 
-//EBAY
-var params = {
-    keywords: "black women's ladies shoes",
-    // add additional fields
-    outputSelector: ['AspectHistogram'],
-    paginationInput: {
-        entriesPerPage: 10
-    },
-    itemFilter: [
-        { name: 'FreeShippingOnly', value: true },
-        { name: 'MaxPrice', value: '150' },
-        { name: 'MinPrice', value: '20' },
-        { name: 'ListingType', value: 'FixedPrice' },
-        { name: 'TopRatedSellerOnly', value: true }
-    ],
-};
+//making ebay calls
 
-ebay.xmlRequest({
-    serviceName: 'Finding',
-    opType: 'findItemsByKeywords',
-    appId: 'Stephani-NLPurcha-PRD-2cd429718-0d5ba0c3',
-    params: params,
-    parser: ebay.parseResponseJson    // (default)
-},
-    // gets all the items together in a merged array
-    function itemsCallback(error, itemsResponse) {
-        if (error) throw error;
-        var items = itemsResponse.searchResult.item;
-        console.log('Found', items.length, 'items');
-        for (var i = 0; i < items.length; i++) {
-            console.log('- ' + items[i].title);
+ebay.makeRequest("women shoes black", function (items) {
+    for (var i = 0; i < items.length; i++) {
+        console.log('- ' + items[i].title);
 
-            var db_item = {};
+        var db_item = {};
 
-            db_item["gender"] = "female";
-            db_item["category"] = "shoes";
-            db_item["colour"] = "black";
-            db_item["title"] = items[i].title;
-            db_item["subcategory"] = items[i].primaryCategory.categoryName;
-            db_item["url"] = items[i].galleryURL;
-            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+        db_item["gender"] = "female";
+        db_item["category"] = "shoes";
+        db_item["colour"] = "black";
+        db_item["title"] = items[i].title;
+        db_item["subcategory"] = items[i].primaryCategory.categoryName;
+        db_item["url"] = items[i].galleryURL;
+        db_item["price"] = items[i].sellingStatus.currentPrice.amount;
 
-            product.insert(db_item, function (product) {
-                console.log("Inserted 1 product");
-            })
-        }
+        product.insert(db_item, function (product) {
+            console.log("Inserted 1 product");
+        })
     }
-);
+});
+
+product.clear();
 
 //**bot setup
 
@@ -128,11 +103,11 @@ bot.dialog('/', function (session) {
                         }
                         var getReply = function (cards, callback) {
                             var reply = new builder.Message(session)
-                            .attachmentLayout(builder.AttachmentLayout.carousel)
-                            .attachments(cards);
+                                .attachmentLayout(builder.AttachmentLayout.carousel)
+                                .attachments(cards);
                             callback(reply);
                         }
-                        var getCards = function(callback) {
+                        var getCards = function (callback) {
                             var cards = getCardsAttachments(products);
                             callback(cards, sendReply);
                         };
@@ -175,7 +150,7 @@ function getCardsAttachments(products, session) {
             ])
         cards.push(newcard)
     }
-    
+
     return cards;
 
     /*
