@@ -1,31 +1,33 @@
-// helps manage database connections
+var mongoose = require('mongoose');
+var config = require('./config');
+var uri = config.creds.mongoose_local;
 
-var MongoClient = require('mongodb').MongoClient
+mongoose.connect(uri)
 
-var state = {
-  db: null,
-}
+/*CONNECTION EVENTS*/
 
-exports.connect = function(url, done) {
-  if (state.db) return done()
+//connected
+mongoose.connection.on('connected', function () {
+  console.log('Mongoose default connection open to ' + uri);
+});
 
-  MongoClient.connect(url, function(err, db) {
-    if (err) return done(err)
-    state.db = db
-    done()
-  })
-}
+//error connecting
+mongoose.connection.on('error', function (err) {
+  console.log('Mongoose default connection error: ' + err);
+});
 
-exports.get = function() {
-  return state.db
-}
+//disconnected
+mongoose.connection.on('disconnected', function () {
+  console.log('Mongoose default connection disconnected');
+});
 
-exports.close = function(done) {
-  if (state.db) {
-    state.db.close(function(err, result) {
-      state.db = null
-      state.mode = null
-      done(err)
-    })
-  }
-}
+//if application ends -> close the connection
+process.on('SIGINT', function () {
+  mongoose.connection.close(function () {
+    console.log('Mongoose default connection disconnected through app termination');
+    process.exit(0);
+  });
+});
+
+// BRING IN YOUR SCHEMAS & MODELS // For example 
+require('./model/product');

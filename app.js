@@ -2,33 +2,23 @@
 
 var restify = require('restify');
 var builder = require('botbuilder');
-var MongoClient = require('mongodb').MongoClient;
-var assert = require('assert');
-var ObjectId = require('mongodb').ObjectID;
-var url = '***REMOVED***';
 var ebay = require('ebay-api')
-const {Wit, log} = require('node-wit');
+const { Wit, log } = require('node-wit');
 var greetingArray = ["Hi! What can I help you with today?",
     "Hello, I'm NLPurchase! What can I do for you?",
     "Hey friend, what are you looking for?"];
 var server = restify.createServer();
-var db = require('./db')
+var db = require('./db');
+var product = require('./controllers/products')
 
-var connect = db.connect('***REMOVED***', function (err) {
-    if (err) {
-        console.log('Unable to connect to Mongo.')
-        process.exit(1)
-    } else {
-        //setup restify server
-        server.listen(80, function () {
-            console.log('%s listening to %s', server.name, server.url);
-        });
-        //clear current database
-    }
-})
+//drop collection
+/*product.clear();*/
 
-connect()
-.then()
+//return all products
+/*product.all(function(products) {
+    console.log(products);
+})*/
+
 //EBAY
 var params = {
     keywords: "black women's ladies shoes",
@@ -60,27 +50,25 @@ ebay.xmlRequest({
         console.log('Found', items.length, 'items');
         for (var i = 0; i < items.length; i++) {
             console.log('- ' + items[i].title);
-            var insertDocument = function (database, callback) {
-                testcollection.insertOne({
-                    "gender": "f",
-                    "category": "shoes",
-                    "colour": "black",
-                    "title": items[i].title,
-                    "subcategory": items[i].primaryCategory.categoryName,
-                    "pictureURL": items[i].galleryURL,
-                    "price": items[i].sellingStatus.currentPrice.amount
-                }, function (err, result) {
-                    assert.equal(err, null);
-                    console.log("Inserted a document into the test collection");
-                    callback();
-                });
-            };
-            insertDocument(database, function () {
-            });
+
+            var db_item = {};
+
+            db_item["gender"] = "female";
+            db_item["category"] = "shoes";
+            db_item["colour"] = "black";
+            db_item["title"] = items[i].title;
+            db_item["subcategory"] = items[i].primaryCategory.categoryName;
+            db_item["url"] = items[i].galleryURL;
+            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+
+            product.insert(db_item, function(product) {
+                console.log("Inserted 1 product");
+            })
         }
     }
 );
 
+/*
 //**bot setup
 
 
@@ -128,9 +116,9 @@ bot.dialog('/', function (session) {
                            session.send(products)
                         }
                     })
-                    /*var randomIndex = Math.floor(Math.random() * greetingArray.length);
+                    var randomIndex = Math.floor(Math.random() * greetingArray.length);
                     var randomGreeting = greetingArray[randomIndex];
-                    session.send(randomGreeting);*/
+                    session.send(randomGreeting);
                     break;
                 case "search":
                     //check if search contains colour, object or gender parameters
@@ -158,14 +146,14 @@ bot.dialog('/', function (session) {
                 //var cards = getCardsAttachments(session, title, subtitle, image);
 
                 // create reply with Carousel AttachmentLayout
-                /*var reply = new builder.Message(session)
+                var reply = new builder.Message(session)
                     .attachmentLayout(builder.AttachmentLayout.carousel)
                     .attachments(cards);
-                session.send(reply);*/
+                session.send(reply);
             }
         })
         .catch(console.error);
-    /*session.send("Hello!");
+    session.send("Hello!");
     var reply;
     var callback = function (result) {
         reply = result;
@@ -178,7 +166,6 @@ bot.dialog('/', function (session) {
         session.send(reply.entities.intent);
     };
     utils.getWitIntent(session.message.text, callback);
-    */
 });
 
 function getCardsAttachments(session) {
@@ -228,3 +215,4 @@ function getCardsAttachments(session) {
             ])
     ];
 }
+*/
