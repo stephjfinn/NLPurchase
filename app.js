@@ -10,9 +10,11 @@ var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 80, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
-var db = require('./db');
-var product = require('./controllers/products')
+//var db = require('./db');
+//var product = require('./controllers/products')
 var ebay = require('./ebay')
+var categoryKeys = require('./categoryKeys');
+var async = require('async');
 
 //drop collection
 /*product.clear();*/
@@ -23,8 +25,63 @@ var ebay = require('./ebay')
 })*/
 
 //making ebay calls
+var womenShoes = categoryKeys.womenShoes;
+var colours = categoryKeys.shoeColours;
 
-ebay.makeRequest("women shoes black", function (items) {
+function categorySelector(i) {
+    if (i < Object.keys(womenShoes).length) {
+        var category = Object.keys(womenShoes)[i];
+        var categoryID = womenShoes[category]
+        colourSelector(category, categoryID, 0, i);
+    }
+};
+
+function colourSelector(category, categoryID, i, j) {
+    if (i < colours.length) {
+        var colour = colours[i];
+        ebay.makeRequest(categoryID, colour, function (items) {
+            console.log("Got item set Type: " + category + " + Colour: " + colour);
+            colourSelector(category, categoryID, i+1, j);
+        })
+    } else {
+        categorySelector(j + 1);
+    }
+}
+
+categorySelector(0);
+
+/*
+async.each(Object.keys(womenShoes), function(category, next) {
+    console.log(womenShoes[category]);
+    async.each(colours, function(colour, callback){
+        console.log(colour);
+        ebay.makeRequest(womenShoes[category], colour, function (items) {
+            console.log("Got item set Type: " + category + " + Colour: " + colour)
+            callback();
+        });
+    }, function(err) {
+        if (err) throw error
+    })
+    next();
+}, function(err){
+    if (err) throw error
+    console.log("all done :)")
+})
+*/
+
+/*for (var category in womenShoes) {
+    var categoryKey = categoryKeys.womenShoes[category];
+    //for (var i = 0; i < categoryKeys.shoeColours.length; i++) {
+        //var colour = categoryKeys.shoeColours[i]
+        var colour = categoryKeys.shoeColours[0]
+        ebay.makeRequest(categoryKey, colour, function (items) {
+            insertEbayItems(items, colour, categoryKey);
+        });
+//    }
+}
+*/
+
+function insertEbayItems(items, colour, category) {
     for (var i = 0; i < items.length; i++) {
         console.log('- ' + items[i].title);
 
@@ -32,7 +89,7 @@ ebay.makeRequest("women shoes black", function (items) {
 
         db_item["gender"] = "female";
         db_item["category"] = "shoes";
-        db_item["colour"] = "black";
+        db_item["colour"] = colour;
         db_item["title"] = items[i].title;
         db_item["subcategory"] = items[i].primaryCategory.categoryName;
         db_item["url"] = items[i].galleryURL;
@@ -42,9 +99,9 @@ ebay.makeRequest("women shoes black", function (items) {
             console.log("Inserted 1 product");
         })
     }
-});
+}
 
-product.clear();
+//product.clear();
 
 //**bot setup
 
