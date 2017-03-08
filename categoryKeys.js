@@ -57,15 +57,8 @@ var menClothing = {
     underwear: '11507',
     vests: '15691'
 }
-var shoeColours = ['Beige', 'Black', 'Blue', 'Brown', 'Clear',
-    'Gold', 'Gray', 'Green', 'Ivory', 'Multi-Color',
-    'Orange', 'Pink', 'Purple', 'Red', 'Silver',
-    'White', 'Yellow'];
-
-
 
 exports.womenShoes = womenShoes;
 exports.womenClothing = womenClothing;
 exports.menShoes = menShoes;
 exports.menClothing = menClothing;
-exports.shoeColours = shoeColours;

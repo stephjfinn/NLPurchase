@@ -38,7 +38,7 @@ exports.makeRequest = function (categoryId, colour, callback) {
     );
 }
 
-exports.getAspectHistogram = function (categoryId, callback) {
+exports.getColours = function (categoryId, callback) {
     var params = {
         categoryId: categoryId,
         // add additional fields
@@ -59,9 +59,23 @@ exports.getAspectHistogram = function (categoryId, callback) {
         // gets all the items together in a merged array
         function itemsCallback(error, itemsResponse) {
             if (error) throw error;
-            var histogram = itemsResponse.getAspectHistogram;
-            console.log('Found histogram: ', histogram);
-            callback(histogram);
+            var colours = [];
+            var histogram = itemsResponse.aspectHistogramContainer.aspect;
+            //var colourArray = histogram.object
+            //console.log('Found histogram: ', histogram);
+            function findColours(aspects) {
+                return aspects.$.name === 'Color';
+            }
+            var coloursObject = histogram.find(findColours).valueHistogram;
+            function makeColourArray(colourObject) {
+                return colourObject.$.valueName
+            }
+            var preliminaryArray = coloursObject.map(makeColourArray);
+            function checkColour(colour) {
+                return colour != 'Not Specified'
+            }
+            coloursArray = preliminaryArray.filter(checkColour)
+            callback(coloursArray);
         }
     );
 }

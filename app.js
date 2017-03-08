@@ -26,29 +26,50 @@ var async = require('async');
 
 //making ebay calls
 var womenShoes = categoryKeys.womenShoes;
-var colours = categoryKeys.shoeColours;
+var menShoes = categoryKeys.menShoes;
+var womenClothing = categoryKeys.womenClothing;
+var menClothing = categoryKeys.menClothing;
 
-function categorySelector(i) {
-    if (i < Object.keys(womenShoes).length) {
-        var category = Object.keys(womenShoes)[i];
-        var categoryID = womenShoes[category]
-        colourSelector(category, categoryID, 0, i);
-    }
-};
+function doInsertion(categorySet, callback) {
+    function categorySelector(i) {
+        if (i < Object.keys(categorySet).length) {
+            var category = Object.keys(categorySet)[i];
+            var categoryID = categorySet[category];
+            ebay.getColours(categoryID, function (colours) {
+                colourSelector(colours, category, categoryID, 0, i);
+            })
+        } else {
+            callback(categorySet + ' inserted!');
+        }
+    };
 
-function colourSelector(category, categoryID, i, j) {
-    if (i < colours.length) {
-        var colour = colours[i];
-        ebay.makeRequest(categoryID, colour, function (items) {
-            console.log("Got item set Type: " + category + " + Colour: " + colour);
-            colourSelector(category, categoryID, i+1, j);
-        })
-    } else {
-        categorySelector(j + 1);
+    function colourSelector(colours, category, categoryID, i, j) {
+        if (i < colours.length) {
+            var colour = colours[i];
+            ebay.makeRequest(categoryID, colour, function (items) {
+                console.log("Got item set Type: " + category + " + Colour: " + colour);
+                colourSelector(colours, category, categoryID, i + 1, j);
+            })
+        } else {
+            categorySelector(j + 1);
+        }
     }
+
+    categorySelector(0);
 }
 
-categorySelector(0);
+doInsertion(womenShoes, function(results) {
+    console.log(results);
+    doInsertion(menShoes, function(results) {
+        console.log(results);
+        doInsertion(womenClothing, function(results) {
+            console.log(results);
+            doInsertion(menClothing, function(results) {
+                console.log(results);
+            })
+        })
+    })
+});
 
 /*
 async.each(Object.keys(womenShoes), function(category, next) {
