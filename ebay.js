@@ -1,6 +1,6 @@
 var ebay = require('ebay-api')
 
-exports.makeRequest = function (categoryId, colour, callback) {
+exports.makeRequest = function (categoryId, colour, aspectName, callback) {
     var params = {
         categoryId: categoryId,
         // add additional fields
@@ -17,7 +17,7 @@ exports.makeRequest = function (categoryId, colour, callback) {
             { name: 'HideDuplicateItems', value: true }
         ],
         aspectFilter: [
-           { aspectName: 'Color', aspectValueName: colour }
+           { aspectName: aspectName, aspectValueName: colour }
         ],
     };
 
@@ -71,7 +71,14 @@ exports.getColours = function (categoryId, callback) {
             function findColours(aspects) {
                 return aspects.$.name === 'Color';
             }
-            var coloursObject = histogram.find(findColours).valueHistogram;
+            function findWash(aspects) {
+                return aspects.$.name === 'Wash';
+            }
+            if (histogram.find(findColours)) {
+                var coloursObject = histogram.find(findColours).valueHistogram;
+            } else {
+                var coloursObject = histogram.find(findWash).valueHistogram;
+            }
             function makeColourArray(colourObject) {
                 return colourObject.$.valueName
             }

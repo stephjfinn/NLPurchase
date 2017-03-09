@@ -38,6 +38,7 @@ function doInsertion(categorySet, categorySetName, callback) {
         if (i < Object.keys(categorySet).length) {
             var category = Object.keys(categorySet)[i];
             var categoryID = categorySet[category];
+            console.log("Getting colours for :" + category);
             ebay.getColours(categoryID, function (colours) {
                 colourSelector(colours, category, categoryID, 0, i);
             })
@@ -49,18 +50,32 @@ function doInsertion(categorySet, categorySetName, callback) {
     function colourSelector(colours, category, categoryID, i, j) {
         if (i < colours.length) {
             var colour = colours[i];
-            console.log("Now requesting Category: " + categoryID + " + Colour: " + colour)
-            ebay.makeRequest(categoryID, colour, function (items) {
-                if (items != null) {
-                    console.log("Got item set Type: " + category + " + Colour: " + colour);
-                    insertEbayItems(categorySetName, items, colour, category, function () {
+            console.log("Now requesting Category: " + categoryID + " + Colour: " + colour);
+            if (category != 'jeans') {
+                ebay.makeRequest(categoryID, colour, 'Color', function (items) {
+                    if (items != null) {
+                        console.log("Got item set Type: " + category + " + Colour: " + colour);
+                        insertEbayItems(categorySetName, items, colour, category, function () {
+                            colourSelector(colours, category, categoryID, i + 1, j);
+                        });
+                    } else {
+                        console.log("No items found for category: " + category + ", colour: " + colour);
                         colourSelector(colours, category, categoryID, i + 1, j);
-                    });
-                } else {
-                    console.log("No items found for category: " + category + ", colour: " + colour);
-                    colourSelector(colours, category, categoryID, i + 1, j);
-                }
-            })
+                    }
+                })
+            } else {
+                ebay.makeRequest(categoryID, colour, 'Wash', function (items) {
+                    if (items != null) {
+                        console.log("Got item set Type: " + category + " + Colour: " + colour);
+                        insertEbayItems(categorySetName, items, colour, category, function () {
+                            colourSelector(colours, category, categoryID, i + 1, j);
+                        });
+                    } else {
+                        console.log("No items found for category: " + category + ", colour: " + colour);
+                        colourSelector(colours, category, categoryID, i + 1, j);
+                    }
+                })
+            }
         } else {
             categorySelector(j + 1);
         }
