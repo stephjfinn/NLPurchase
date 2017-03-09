@@ -38,7 +38,7 @@ exports.insert = function (item, callback) {
             if (err) {
                 console.log(err);
             } else {
-                console.log("Product created: " + product);
+                //console.log("Product created: " + product);
                 callback();
             }
         })

@@ -6,14 +6,15 @@ exports.makeRequest = function (categoryId, colour, callback) {
         // add additional fields
         outputSelector: ['PictureURLLarge', 'PictureURLSuperSize', 'AspectHistogram'],
         paginationInput: {
-            entriesPerPage: 100 //default is 100
+            entriesPerPage: 10 //default is 100
         },
         itemFilter: [
             { name: 'FreeShippingOnly', value: true },
             { name: 'MaxPrice', value: '200' },
             { name: 'MinPrice', value: '20' },
             { name: 'ListingType', value: 'FixedPrice' },
-            { name: 'TopRatedSellerOnly', value: true }
+            { name: 'TopRatedSellerOnly', value: true },
+            { name: 'HideDuplicateItems', value: true }
         ],
         aspectFilter: [
            { aspectName: 'Color', aspectValueName: colour }
@@ -32,8 +33,12 @@ exports.makeRequest = function (categoryId, colour, callback) {
         function itemsCallback(error, itemsResponse) {
             if (error) throw error;
             var items = itemsResponse.searchResult.item;
-            console.log('Found', items.length, 'items');
-            callback(items);
+            if (items) {
+                console.log('Found', items.length, 'items');
+                callback(items);
+            } else {
+                callback(null);
+            }
         }
     );
 }

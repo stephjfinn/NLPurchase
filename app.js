@@ -10,8 +10,8 @@ var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 80, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
-//var db = require('./db');
-//var product = require('./controllers/products')
+var db = require('./db');
+var product = require('./controllers/products')
 var ebay = require('./ebay')
 var categoryKeys = require('./categoryKeys');
 var async = require('async');
@@ -24,13 +24,16 @@ var async = require('async');
     console.log(products);
 })*/
 
+//drop existing product table
+product.clear();
+
 //making ebay calls
 var womenShoes = categoryKeys.womenShoes;
 var menShoes = categoryKeys.menShoes;
 var womenClothing = categoryKeys.womenClothing;
 var menClothing = categoryKeys.menClothing;
 
-function doInsertion(categorySet, callback) {
+function doInsertion(categorySet, categorySetName, callback) {
     function categorySelector(i) {
         if (i < Object.keys(categorySet).length) {
             var category = Object.keys(categorySet)[i];
@@ -39,16 +42,24 @@ function doInsertion(categorySet, callback) {
                 colourSelector(colours, category, categoryID, 0, i);
             })
         } else {
-            callback(categorySet + ' inserted!');
+            callback(categorySetName + ' inserted!');
         }
     };
 
     function colourSelector(colours, category, categoryID, i, j) {
         if (i < colours.length) {
             var colour = colours[i];
+            console.log("Now requesting Category: " + categoryID + " + Colour: " + colour)
             ebay.makeRequest(categoryID, colour, function (items) {
-                console.log("Got item set Type: " + category + " + Colour: " + colour);
-                colourSelector(colours, category, categoryID, i + 1, j);
+                if (items != null) {
+                    console.log("Got item set Type: " + category + " + Colour: " + colour);
+                    insertEbayItems(categorySetName, items, colour, category, function () {
+                        colourSelector(colours, category, categoryID, i + 1, j);
+                    });
+                } else {
+                    console.log("No items found for category: " + category + ", colour: " + colour);
+                    colourSelector(colours, category, categoryID, i + 1, j);
+                }
             })
         } else {
             categorySelector(j + 1);
@@ -58,78 +69,63 @@ function doInsertion(categorySet, callback) {
     categorySelector(0);
 }
 
-doInsertion(womenShoes, function(results) {
+doInsertion(womenShoes, 'womenShoes', function (results) {
     console.log(results);
-    doInsertion(menShoes, function(results) {
+    doInsertion(menShoes, 'menShoes', function (results) {
         console.log(results);
-        doInsertion(womenClothing, function(results) {
+        doInsertion(womenClothing, 'womenClothing', function (results) {
             console.log(results);
-            doInsertion(menClothing, function(results) {
+            doInsertion(menClothing, 'menClothing', function (results) {
                 console.log(results);
             })
         })
     })
 });
 
-/*
-async.each(Object.keys(womenShoes), function(category, next) {
-    console.log(womenShoes[category]);
-    async.each(colours, function(colour, callback){
-        console.log(colour);
-        ebay.makeRequest(womenShoes[category], colour, function (items) {
-            console.log("Got item set Type: " + category + " + Colour: " + colour)
+function insertEbayItems(categorySetName, items, colour, category, callback) {
+    function insertOneItem(i) {
+        if (i < items.length) {
+            console.log('- ' + items[i].title);
+
+            var db_item = {};
+
+            if (categorySetName.includes("women")) {
+                db_item["gender"] = "female";
+            } else {
+                db_item["gender"] = "male";
+            }
+            db_item["category"] = category;
+            db_item["colour"] = colour;
+            db_item["title"] = items[i].title;
+            db_item["subcategory"] = items[i].primaryCategory.categoryName;
+            if (items[i].pictureURLSuperSize) {
+                db_item["url"] = items[i].pictureURLSuperSize;
+            } else if (items[i].pictureURLLarge) {
+                db_item["url"] = items[i].pictureURLLarge;
+            } else if (items[i].galleryPlusPictureURL) {
+                db_item["url"] = items[i].galleryPlusPictureURL;
+            } else {
+                db_item["url"] = items[i].galleryURL;
+            }
+            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+
+            product.insert(db_item, function (product) {
+                console.log("Inserted 1 product");
+                insertOneItem(i + 1);
+            })
+        } else {
             callback();
-        });
-    }, function(err) {
-        if (err) throw error
-    })
-    next();
-}, function(err){
-    if (err) throw error
-    console.log("all done :)")
-})
-*/
-
-/*for (var category in womenShoes) {
-    var categoryKey = categoryKeys.womenShoes[category];
-    //for (var i = 0; i < categoryKeys.shoeColours.length; i++) {
-        //var colour = categoryKeys.shoeColours[i]
-        var colour = categoryKeys.shoeColours[0]
-        ebay.makeRequest(categoryKey, colour, function (items) {
-            insertEbayItems(items, colour, categoryKey);
-        });
-//    }
-}
-*/
-
-function insertEbayItems(items, colour, category) {
-    for (var i = 0; i < items.length; i++) {
-        console.log('- ' + items[i].title);
-
-        var db_item = {};
-
-        db_item["gender"] = "female";
-        db_item["category"] = "shoes";
-        db_item["colour"] = colour;
-        db_item["title"] = items[i].title;
-        db_item["subcategory"] = items[i].primaryCategory.categoryName;
-        db_item["url"] = items[i].galleryURL;
-        db_item["price"] = items[i].sellingStatus.currentPrice.amount;
-
-        product.insert(db_item, function (product) {
-            console.log("Inserted 1 product");
-        })
+        }
     }
+    insertOneItem(0);
 }
-
-//product.clear();
 
 //**bot setup
 
 
 
 //create chat bot
-var connector = new builder.ChatConnector({
+/*var connector = new builder.ChatConnector({
     appId: '***REMOVED***',
     appPassword: '***REMOVED***'
 });
@@ -197,20 +193,6 @@ bot.dialog('/', function (session) {
             }
         })
         .catch(console.error);
-    /*session.send("Hello!");
-    var reply;
-    var callback = function (result) {
-        reply = result;
-
-        if (!reply)
-            return false;
-
-        console.log(reply.entities.intent);
-
-        session.send(reply.entities.intent);
-    };
-    utils.getWitIntent(session.message.text, callback);
-    */
 });
 
 function getCardsAttachments(products, session) {
@@ -231,7 +213,7 @@ function getCardsAttachments(products, session) {
 
     return cards;
 
-    /*
+    
     return [
         new builder.HeroCard(session)
             .title('Azure')
@@ -277,5 +259,5 @@ function getCardsAttachments(products, session) {
                 builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/cognitive-services/', 'Learn More')
             ])
     ];
-    */
-}
+    
+}*/
