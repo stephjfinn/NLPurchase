@@ -2,7 +2,10 @@ var mongoose = require('mongoose');
 var config = require('./config');
 var uri = config.creds.mongoose_local;
 
-mongoose.connect(uri)
+function connect() {
+  mongoose.connect(uri)
+}
+connect();
 
 /*CONNECTION EVENTS*/
 
@@ -13,7 +16,7 @@ mongoose.connection.on('connected', function () {
 
 //error connecting
 mongoose.connection.on('error', function (err) {
-  console.log('Mongoose default connection error: ' + err);
+  console.log('Failed to connect to Mongo with error ' + err);
 });
 
 //disconnected

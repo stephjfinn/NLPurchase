@@ -1,20 +1,25 @@
 //NOTE TO SELF: shift + alt + f = format indentation
+var db = require('./db');
 
+var product = require('./controllers/products');
 var restify = require('restify');
 var builder = require('botbuilder');
 const { Wit, log } = require('node-wit');
-var greetingArray = ["Hi! What can I help you with today?",
-    "Hello, I'm NLPurchase! What can I do for you?",
-    "Hey friend, what are you looking for?"];
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 80, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
-var db = require('./db');
-var product = require('./controllers/products')
-var ebay = require('./ebay')
 var categoryKeys = require('./categoryKeys');
 var async = require('async');
+var greetingArray = ["Hi! What can I help you with today?",
+    "Hello, I'm NLPurchase! What can I do for you?",
+    "Hey friend, what are you looking for?"];
+var insert = require('./insertion');
+
+var womenShoes = categoryKeys.womenShoes;
+var menShoes = categoryKeys.menShoes;
+var womenClothing = categoryKeys.womenClothing;
+var menClothing = categoryKeys.menClothing;
 
 //drop collection
 /*product.clear();*/
@@ -28,112 +33,18 @@ var async = require('async');
 product.clear();
 
 //making ebay calls
-var womenShoes = categoryKeys.womenShoes;
-var menShoes = categoryKeys.menShoes;
-var womenClothing = categoryKeys.womenClothing;
-var menClothing = categoryKeys.menClothing;
-
-function doInsertion(categorySet, categorySetName, callback) {
-    function categorySelector(i) {
-        if (i < Object.keys(categorySet).length) {
-            var category = Object.keys(categorySet)[i];
-            var categoryID = categorySet[category];
-            console.log("Getting colours for :" + category);
-            ebay.getColours(categoryID, function (colours) {
-                colourSelector(colours, category, categoryID, 0, i);
-            })
-        } else {
-            callback(categorySetName + ' inserted!');
-        }
-    };
-
-    function colourSelector(colours, category, categoryID, i, j) {
-        if (i < colours.length) {
-            var colour = colours[i];
-            console.log("Now requesting Category: " + categoryID + " + Colour: " + colour);
-            if (category != 'jeans') {
-                ebay.makeRequest(categoryID, colour, 'Color', function (items) {
-                    if (items != null) {
-                        console.log("Got item set Type: " + category + " + Colour: " + colour);
-                        insertEbayItems(categorySetName, items, colour, category, function () {
-                            colourSelector(colours, category, categoryID, i + 1, j);
-                        });
-                    } else {
-                        console.log("No items found for category: " + category + ", colour: " + colour);
-                        colourSelector(colours, category, categoryID, i + 1, j);
-                    }
-                })
-            } else {
-                ebay.makeRequest(categoryID, colour, 'Wash', function (items) {
-                    if (items != null) {
-                        console.log("Got item set Type: " + category + " + Colour: " + colour);
-                        insertEbayItems(categorySetName, items, colour, category, function () {
-                            colourSelector(colours, category, categoryID, i + 1, j);
-                        });
-                    } else {
-                        console.log("No items found for category: " + category + ", colour: " + colour);
-                        colourSelector(colours, category, categoryID, i + 1, j);
-                    }
-                })
-            }
-        } else {
-            categorySelector(j + 1);
-        }
-    }
-
-    categorySelector(0);
-}
-
-doInsertion(womenShoes, 'womenShoes', function (results) {
+insert.doInsertion(womenShoes, 'womenShoes', function (results) {
     console.log(results);
-    doInsertion(menShoes, 'menShoes', function (results) {
+    insert.doInsertion(menShoes, 'menShoes', function (results) {
         console.log(results);
-        doInsertion(womenClothing, 'womenClothing', function (results) {
+        insert.doInsertion(womenClothing, 'womenClothing', function (results) {
             console.log(results);
-            doInsertion(menClothing, 'menClothing', function (results) {
+            insert.doInsertion(menClothing, 'menClothing', function (results) {
                 console.log(results);
             })
         })
     })
 });
-
-function insertEbayItems(categorySetName, items, colour, category, callback) {
-    function insertOneItem(i) {
-        if (i < items.length) {
-            console.log('- ' + items[i].title);
-
-            var db_item = {};
-
-            if (categorySetName.includes("women")) {
-                db_item["gender"] = "female";
-            } else {
-                db_item["gender"] = "male";
-            }
-            db_item["category"] = category;
-            db_item["colour"] = colour;
-            db_item["title"] = items[i].title;
-            db_item["subcategory"] = items[i].primaryCategory.categoryName;
-            if (items[i].pictureURLSuperSize) {
-                db_item["url"] = items[i].pictureURLSuperSize;
-            } else if (items[i].pictureURLLarge) {
-                db_item["url"] = items[i].pictureURLLarge;
-            } else if (items[i].galleryPlusPictureURL) {
-                db_item["url"] = items[i].galleryPlusPictureURL;
-            } else {
-                db_item["url"] = items[i].galleryURL;
-            }
-            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
-
-            product.insert(db_item, function (product) {
-                console.log("Inserted 1 product");
-                insertOneItem(i + 1);
-            })
-        } else {
-            callback();
-        }
-    }
-    insertOneItem(0);
-}
 
 //**bot setup
 
