@@ -11,10 +11,9 @@ server.listen(process.env.port || process.env.PORT || 80, function () {
 });
 var categoryKeys = require('./categoryKeys');
 var async = require('async');
-var greetingArray = ["Hi! What can I help you with today?",
-    "Hello, I'm NLPurchase! What can I do for you?",
-    "Hey friend, what are you looking for?"];
 var insert = require('./insertion');
+var getAttachment = require('./getAttachment');
+var emoji = require('node-emoji');
 
 var womenShoes = categoryKeys.womenShoes;
 var menShoes = categoryKeys.menShoes;
@@ -29,6 +28,7 @@ var menClothing = categoryKeys.menClothing;
     console.log(products);
 })*/
 
+/* //CLEARING AND REINSERTING PRODUCTS - CURRENTLY UPDATE IS NOT NEEDED
 //drop existing product table
 product.clear();
 
@@ -45,13 +45,12 @@ insert.doInsertion(womenShoes, 'womenShoes', function (results) {
         })
     })
 });
+*/
 
 //**bot setup
 
-
-
 //create chat bot
-/*var connector = new builder.ChatConnector({
+var connector = new builder.ChatConnector({
     appId: '***REMOVED***',
     appPassword: '***REMOVED***'
 });
@@ -77,113 +76,109 @@ const client = new Wit({
     logger: new log.Logger(log.DEBUG) // optional
 });
 
+function getGreeting(session) {
+    function getFirstName(str) {
+        if (str.indexOf(' ') === -1)
+            return str;
+        else
+            return str.substr(0, str.indexOf(' '));
+    };
+
+    var greetingArray = ["Hi " + getFirstName(session.message.user.name) + ", what can I help you with today?",
+    "Hello " + getFirstName(session.message.user.name) + ", I'm NLPurchase!  What can I get you?",
+    "Hey " + getFirstName(session.message.user.name) + ", what are you looking for?"];
+    var randomIndex = Math.floor(Math.random() * greetingArray.length);
+    var randomGreeting = greetingArray[randomIndex];
+    randomGreeting = emoji.emojify(randomGreeting);
+    return getAttachment.getGreetingAttachment(session, randomGreeting);
+}
+
 //bot dialog
+
+// Install logging middleware
+bot.use({
+    botbuilder: function (session, next) {
+        if (/^log on/i.test(session.message.text)) {
+            session.userData.isLogging = true;
+            session.send('Logging is now turned on');
+        } else if (/^log off/i.test(session.message.text)) {
+            session.userData.isLogging = false;
+            session.send('Logging is now turned off');
+        } else {
+            if (session.userData.isLogging) {
+                console.log('Message Received: ', session.message.text);
+            }
+            next();
+        }
+    }
+});
 
 bot.dialog('/', function (session) {
     session.sendTyping();
-    client.message(session.message.text, {})
-        .then((data) => {
-            switch (data.entities.intent[0].value) {
-                case "greeting":
-                    var randomIndex = Math.floor(Math.random() * greetingArray.length);
-                    var randomGreeting = greetingArray[randomIndex];
-                    session.send(randomGreeting);
-                    break;
-                case "search":
-                    //check if search contains colour, object or gender parameters
-                    //if it's missing the gender parameter start getGender dialog & return here
-                    //(randomly?) select in mongodb based on parameters
+    if (session.message.text != "") {
+        client.message(session.message.text, {})
+            .then((data) => {
+                switch (data.entities.intent[0].value) {
+                    case "greeting":
+                        var reply = getGreeting(session);
+                        session.send(reply);
+                        break;
+                    case "search":
+                        //check if search contains colour, object or gender parameters
+                        //if it's missing the gender parameter start getGender dialog & return here
+                        //(randomly?) select in mongodb based on parameters
 
-                    //var cards = getCardsAttachments(session);
-                    var reply;
+                        var reply;
 
-                    product.all(function (products) {
-                        var sendReply = function (reply) {
-                            session.send(reply);
-                        }
-                        var getReply = function (cards, callback) {
-                            var reply = new builder.Message(session)
-                                .attachmentLayout(builder.AttachmentLayout.carousel)
-                                .attachments(cards);
-                            callback(reply);
-                        }
-                        var getCards = function (callback) {
-                            var cards = getCardsAttachments(products);
-                            callback(cards, sendReply);
-                        };
-                        getCards(getReply);
-                    })
+                        product.all(function (products) {
+                            var sendReply = function (reply) {
+                                session.send(reply);
+                            }
+                            var getReply = function (cards, callback) {
+                                var reply = new builder.Message(session)
+                                    .attachmentLayout(builder.AttachmentLayout.carousel)
+                                    .attachments(cards);
+                                callback(reply);
+                            }
+                            var getCards = function (callback) {
+                                var cards = getCardsAttachments(products);
+                                callback(cards, sendReply);
+                            };
+                            getCards(getReply);
+                        })
 
-                // create reply with Carousel AttachmentLayout
-
-            }
-        })
-        .catch(console.error);
-});
-
-function getCardsAttachments(products, session) {
-    var cards = [];
-
-    for (var i = 0; i < 9; i++) {
-        var newcard = new builder.HeroCard(session)
-            .title(products[i].title)
-            .images([
-                builder.CardImage.create(session, products[i].pictureURL)
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://google.ie', 'Add to cart'),
-                builder.CardAction.openUrl(session, 'https://google.ie', 'More like this')
-            ])
-        cards.push(newcard)
+                        // create reply with Carousel AttachmentLayout
+                        break;
+                    case "identity":
+                        var reply = "I am NLPurchase, your free shopping assistant! " +
+                            "I live on the internet in order to personally aid your fashion needs. " +
+                            "Give me your colours, patterns, events and I will help you fill your perfect custom wardrobe.";
+                        session.send(reply);
+                        break;
+                    case "joke":
+                        var jokes = ["I have a part-time job helping a one armed typist do capital letters. It's shift work",
+                            "I only have two complaints in life: not enough closet space and nothing to wear.",
+                            "My friend asked me to help him round up his 37 sheep. I said \"40\".",
+                            "A husband says to his programmer wife, \"Go to the store and buy a loaf of bread. If they have eggs, buy a dozen.\" " +
+                            "Wife returns with 12 loaves of bread.",
+                            "Two cows are grazing in a field. One cow says to the other, \"you ever worry about that mad cow disease?\". " +
+                            "The other cow says, \"why would I care? I'm a helicopter!\"",
+                            "There are 10 kinds of people in the world: those who know binary, and those who don't.",
+                            "What did the Buddhist monk say to the hot dog vendor? \"Make me one with everything.\"",
+                            "Guy walks into a bar and orders a fruit punch. Bartender says \"Pal, if you want a punch you'll have to stand in line.\ " +
+                            "Guy looks around, but there is no punch line.",
+                            "Red sky at night: shepherd’s delight. Blue sky at night: day.",
+                            "I spilled spot remover on my dog. Now he's gone.",
+                            "You'll never be as lazy as whoever named the fireplace"];
+                        session.send(jokes);
+                        break;
+                }
+            })
+            .catch(console.error);
+    } else {
+        //the user has sent a sticker; bot can't respond to those
+        var reply = "Well, I hope that's a good thing! :smile:";
+        reply = emoji.emojify(reply);
+        session.send(reply);
     }
-
-    return cards;
-
-    
-    return [
-        new builder.HeroCard(session)
-            .title('Azure')
-            .subtitle('Offload the heavy lifting of data center management')
-            .text('Store and help protect your data. Get durable, highly available data storage across the globe and pay only for what you use.')
-            .images([
-                builder.CardImage.create(session, 'https://docs.microsoft.com/en-us/azure/storage/media/storage-introduction/storage-concepts.png')
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/storage/', 'Learn More')
-            ]),
-
-        new builder.ThumbnailCard(session)
-            .title('DocumentDB')
-            .subtitle('Blazing fast, planet-scale NoSQL')
-            .text('NoSQL service for highly available, globally distributed apps—take full advantage of SQL and JavaScript over document and key-value data without the hassles of on-premises or virtual machine-based cloud database options.')
-            .images([
-                builder.CardImage.create(session, 'https://docs.microsoft.com/en-us/azure/documentdb/media/documentdb-introduction/json-database-resources1.png')
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/documentdb/', 'Learn More')
-            ]),
-
-        new builder.HeroCard(session)
-            .title('Azure Functions')
-            .subtitle('Process events with a serverless code architecture')
-            .text('An event-based serverless compute experience to accelerate your development. It can scale based on demand and you pay only for the resources you consume.')
-            .images([
-                builder.CardImage.create(session, 'https://azurecomcdn.azureedge.net/cvt-5daae9212bb433ad0510fbfbff44121ac7c759adc284d7a43d60dbbf2358a07a/images/page/services/functions/01-develop.png')
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/functions/', 'Learn More')
-            ]),
-
-        new builder.ThumbnailCard(session)
-            .title('Cognitive Services')
-            .subtitle('Build powerful intelligence into your applications to enable natural and contextual interactions')
-            .text('Enable natural and contextual interaction with tools that augment users\' experiences using the power of machine-based intelligence. Tap into an ever-growing collection of powerful artificial intelligence algorithms for vision, speech, language, and knowledge.')
-            .images([
-                builder.CardImage.create(session, 'https://azurecomcdn.azureedge.net/cvt-68b530dac63f0ccae8466a2610289af04bdc67ee0bfbc2d5e526b8efd10af05a/images/page/services/cognitive-services/cognitive-services.png')
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/cognitive-services/', 'Learn More')
-            ])
-    ];
-    
-}*/
+});
