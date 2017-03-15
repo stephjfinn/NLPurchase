@@ -5,8 +5,9 @@ exports.getGreetingAttachment = function(session, greeting) {
      var card = new builder.HeroCard(session)
             .text(greeting)
             .buttons([
-                builder.CardAction.openUrl(session, 'https://google.ie', emoji.emojify('Let\'s search :mag:')),
-                builder.CardAction.openUrl(session, 'https://google.ie', emoji.emojify('Inspire me! :bulb:'))
+                builder.CardAction.postBack(session, 'search', emoji.emojify('Let\'s search :mag:')),
+                builder.CardAction.postBack(session, 'give me inspiration', emoji.emojify('Inspire me! :bulb:')),
+                builder.CardAction.postBack(session, 'style', emoji.emojify('Style profile :memo:'))
             ]);
     var msg = new builder.Message(session).attachments([card]);
     return msg;

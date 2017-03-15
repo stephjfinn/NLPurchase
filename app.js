@@ -118,60 +118,72 @@ bot.dialog('/', function (session) {
     if (session.message.text != "") {
         client.message(session.message.text, {})
             .then((data) => {
-                switch (data.entities.intent[0].value) {
-                    case "greeting":
-                        var reply = getGreeting(session);
-                        session.send(reply);
-                        break;
-                    case "search":
-                        //check if search contains colour, object or gender parameters
-                        //if it's missing the gender parameter start getGender dialog & return here
-                        //(randomly?) select in mongodb based on parameters
+                if (data.entities.intent != null) {
+                    switch (data.entities.intent[0].value) {
+                        case "greeting":
+                            var reply = getGreeting(session);
+                            session.send(reply);
+                            break;
+                        case "search":
+                            //check if search contains colour, object or gender parameters
+                            //if it's missing the gender parameter start getGender dialog & return here
+                            //(randomly?) select in mongodb based on parameters
 
-                        var reply;
+                            var reply;
 
-                        product.all(function (products) {
-                            var sendReply = function (reply) {
-                                session.send(reply);
-                            }
-                            var getReply = function (cards, callback) {
-                                var reply = new builder.Message(session)
-                                    .attachmentLayout(builder.AttachmentLayout.carousel)
-                                    .attachments(cards);
-                                callback(reply);
-                            }
-                            var getCards = function (callback) {
-                                var cards = getCardsAttachments(products);
-                                callback(cards, sendReply);
-                            };
-                            getCards(getReply);
-                        })
+                            product.all(function (products) {
+                                var sendReply = function (reply) {
+                                    session.send(reply);
+                                }
+                                var getReply = function (cards, callback) {
+                                    var reply = new builder.Message(session)
+                                        .attachmentLayout(builder.AttachmentLayout.carousel)
+                                        .attachments(cards);
+                                    callback(reply);
+                                }
+                                var getCards = function (callback) {
+                                    var cards = getCardsAttachments(products);
+                                    callback(cards, sendReply);
+                                };
+                                getCards(getReply);
+                            })
 
-                        // create reply with Carousel AttachmentLayout
-                        break;
-                    case "identity":
-                        var reply = "I am NLPurchase, your free shopping assistant! " +
-                            "I live on the internet in order to personally aid your fashion needs. " +
-                            "Give me your colours, patterns, events and I will help you fill your perfect custom wardrobe.";
-                        session.send(reply);
-                        break;
-                    case "joke":
-                        var jokes = ["I have a part-time job helping a one armed typist do capital letters. It's shift work",
-                            "I only have two complaints in life: not enough closet space and nothing to wear.",
-                            "My friend asked me to help him round up his 37 sheep. I said \"40\".",
-                            "A husband says to his programmer wife, \"Go to the store and buy a loaf of bread. If they have eggs, buy a dozen.\" " +
-                            "Wife returns with 12 loaves of bread.",
-                            "Two cows are grazing in a field. One cow says to the other, \"you ever worry about that mad cow disease?\". " +
-                            "The other cow says, \"why would I care? I'm a helicopter!\"",
-                            "There are 10 kinds of people in the world: those who know binary, and those who don't.",
-                            "What did the Buddhist monk say to the hot dog vendor? \"Make me one with everything.\"",
-                            "Guy walks into a bar and orders a fruit punch. Bartender says \"Pal, if you want a punch you'll have to stand in line.\ " +
-                            "Guy looks around, but there is no punch line.",
-                            "Red sky at night: shepherd’s delight. Blue sky at night: day.",
-                            "I spilled spot remover on my dog. Now he's gone.",
-                            "You'll never be as lazy as whoever named the fireplace"];
-                        session.send(jokes);
-                        break;
+                            // create reply with Carousel AttachmentLayout
+                            break;
+                        case "identity":
+                            var reply = "I am NLPurchase, your free shopping assistant! :smiley: " +
+                                "I live on the internet in order to personally aid your fashion needs. " +
+                                "Give me your colours, patterns, events, and I will help you fill your perfect custom wardrobe. :ok_hand:";
+                            session.send(reply);
+                            break;
+                        case "joke":
+                            var jokes = ["I have a part-time job helping a one armed typist do capital letters. It's shift work",
+                                "I only have two complaints in life: not enough closet space and nothing to wear.",
+                                "My friend asked me to help him round up his 37 sheep. I said \"40\".",
+                                "A husband says to his programmer wife, \"Go to the store and buy a loaf of bread. If they have eggs, buy a dozen.\" " +
+                                "Wife returns with 12 loaves of bread.",
+                                "Two cows are grazing in a field. One cow says to the other, \"you ever worry about that mad cow disease?\". " +
+                                "The other cow says, \"why would I care? I'm a helicopter!\"",
+                                "There are 10 kinds of people in the world: those who know binary, and those who don't.",
+                                "What did the Buddhist monk say to the hot dog vendor? \"Make me one with everything.\"",
+                                "Guy walks into a bar and orders a fruit punch. Bartender says \"Pal, if you want a punch you'll have to stand in line.\ " +
+                                "Guy looks around, but there is no punch line.",
+                                "Red sky at night: shepherd’s delight. Blue sky at night: day.",
+                                "I spilled spot remover on my dog. Now he's gone.",
+                                "You'll never be as lazy as whoever named the fireplace"];
+                            session.send(jokes);
+                            break;
+                        case "restart":
+                            var reply = "No problem, let's start fresh."
+                            session.send(reply);
+                            reply = getGreeting(session);
+                            session.send(reply);
+                    }
+                } else {
+                    var reply = ["I'm sorry, could you say that again?",
+                        "I don't quite get what you mean by that, could you repeat it?",
+                        "Can you say that again for me please?"]
+                    session.send(reply);
                 }
             })
             .catch(console.error);
