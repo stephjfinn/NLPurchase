@@ -23,8 +23,9 @@ exports.getCardsAttachments = function (products, session) {
                 builder.CardImage.create(session, products[i].pictureURL)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'https://google.ie', 'Add to cart'),
-                builder.CardAction.openUrl(session, 'https://google.ie', 'More like this')
+                builder.CardAction.openUrl(session, 'https://google.ie', 'Buy'),
+                builder.CardAction.openUrl(session, 'https://google.ie', 'More like this'),
+                builder.CardAction.openUrl(session, 'https://google.ie', ':heart:')
             ])
         cards.push(newcard)
     }

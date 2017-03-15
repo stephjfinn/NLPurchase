@@ -14,11 +14,15 @@ var async = require('async');
 var insert = require('./insertion');
 var getAttachment = require('./getAttachment');
 var emoji = require('node-emoji');
+var setFbMenus = require('./setFbMenus');
 
 var womenShoes = categoryKeys.womenShoes;
 var menShoes = categoryKeys.menShoes;
 var womenClothing = categoryKeys.womenClothing;
 var menClothing = categoryKeys.menClothing;
+
+/*SET FACEBOOK MENU THINGS*/
+//setFbMenus.setAllMenus();
 
 //drop collection
 /*product.clear();*/
@@ -193,4 +197,9 @@ bot.dialog('/', function (session) {
         reply = emoji.emojify(reply);
         session.send(reply);
     }
+});
+
+bot.beginDialogAction('search', '/search');
+bot.dialog('/search', function(session){
+    session.send("Search activated");
 });
