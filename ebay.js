@@ -9,9 +9,6 @@ exports.makeRequest = function (categoryId, colour, aspectName, callback) {
             entriesPerPage: 10 //default is 100
         },
         itemFilter: [
-            { name: 'FreeShippingOnly', value: true },
-            { name: 'MaxPrice', value: '200' },
-            { name: 'MinPrice', value: '20' },
             { name: 'ListingType', value: 'FixedPrice' },
             { name: 'TopRatedSellerOnly', value: true },
             { name: 'HideDuplicateItems', value: true }

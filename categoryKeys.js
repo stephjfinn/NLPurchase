@@ -49,12 +49,12 @@ var menClothing = {
     pants: '57989',
     shorts: '15689',
     //sleepwear: '11510', //sleepwear & robes
-    socks: '11511',
+    //socks: '11511',
     suits: '3001',
     sweaters: '11484',
     hoodies: '155183',
     swimwear: '15690',
-    underwear: '11507',
+    //underwear: '11507',
     vests: '15691'
 }
 

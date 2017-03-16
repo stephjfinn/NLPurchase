@@ -24,6 +24,18 @@ exports.all = function (callback) {
     });
 };
 
+exports.find = function (gender, category, colour, callback) {
+    Product.find({ "gender":gender, "colour":colour, "category":category }, function (err, products) {
+        if (err) {
+            console.log(err);
+            return;
+        } else {
+            console.log('Products found: ' + products);
+            callback(products);
+        }
+    });
+};
+
 exports.insert = function (item, callback) {
     Product.create({
         gender: item.gender,

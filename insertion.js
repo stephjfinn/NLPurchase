@@ -60,9 +60,9 @@ function insertEbayItems(categorySetName, items, colour, category, callback) {
             var db_item = {};
 
             if (categorySetName.includes("women")) {
-                db_item["gender"] = "female";
+                db_item["gender"] = "woman";
             } else {
-                db_item["gender"] = "male";
+                db_item["gender"] = "man";
             }
             db_item["category"] = category;
             db_item["colour"] = colour;
