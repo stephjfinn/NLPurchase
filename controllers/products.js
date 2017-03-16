@@ -28,7 +28,10 @@ exports.find = function (gender, category, colour, callback) {
     Product.find({ "gender":gender, "colour":colour, "category":category }, function (err, products) {
         if (err) {
             console.log(err);
-            return;
+            callback(null);
+        } else if (products.length <= 0) {
+            console.log('No products found');
+            callback(null);
         } else {
             console.log('Products found: ' + products);
             callback(products);
