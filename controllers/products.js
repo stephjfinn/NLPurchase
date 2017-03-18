@@ -39,6 +39,21 @@ exports.find = function (gender, category, colour, callback) {
     });
 };
 
+exports.findAlt = function (gender, keyword, callback) {
+    Product.find({ "gender":gender, "keyword":keyword }, function (err, products) {
+        if (err) {
+            console.log(err);
+            callback(null);
+        } else if (products.length <= 0) {
+            console.log('No products found');
+            callback(null);
+        } else {
+            console.log('Products found: ' + products);
+            callback(products);
+        }
+    });
+};
+
 exports.insert = function (item, callback) {
     Product.create({
         gender: item.gender,

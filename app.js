@@ -15,11 +15,14 @@ var insert = require('./insertion');
 var getAttachment = require('./getAttachment');
 var emoji = require('node-emoji');
 var setFbMenus = require('./setFbMenus');
+var fs = require('fs');
 
 var womenShoes = categoryKeys.womenShoes;
 var menShoes = categoryKeys.menShoes;
 var womenClothing = categoryKeys.womenClothing;
 var menClothing = categoryKeys.menClothing;
+var trends = categoryKeys.trends;
+var occasions = categoryKeys.occasions;
 
 /*SET FACEBOOK MENU THINGS*/
 //setFbMenus.setAllMenus();
@@ -40,15 +43,28 @@ var menClothing = categoryKeys.menClothing;
 //insert.doInsertion(womenShoes, 'womenShoes', function (results) {
 //    console.log(results);
 //    insert.doInsertion(menShoes, 'menShoes', function (results) {
-//        console.log(results);
+//      console.log(results);
 insert.doInsertion(womenClothing, 'womenClothing', function (results) {
     console.log(results);
     insert.doInsertion(menClothing, 'menClothing', function (results) {
         console.log(results);
+        insert.doAltInsertion('1059', trends, function (results) {
+            console.log(results);
+            insert.doAltInsertion('15724', trends, function (results) {
+                console.log(results);
+                insert.doAltInsertion('1059', occasions, function (results) {
+                    console.log(results);
+                    insert.doAltInsertion('15724', occasions, function (results) {
+                        console.log(results);
+                    })
+                })
+            })
+        })
     })
-})*/
+})
 //    })
 //});
+*/
 
 //**bot setup
 
@@ -69,6 +85,7 @@ const client = new Wit({
                 return resolve();
             });
         },
+
         myAction({ sessionId, context, text, entities }) {
             console.log(`Session ${sessionId} received ${text}`);
             console.log(`The current context is ${JSON.stringify(context)}`);
@@ -92,6 +109,7 @@ function getGreeting(session) {
     "Hey " + getFirstName(session.message.user.name) + ", what are you looking for?"];
     var randomIndex = Math.floor(Math.random() * greetingArray.length);
     var randomGreeting = greetingArray[randomIndex];
+    randomGreeting += " Choose from the options below or try a sentence (e.g. \"I'm looking for a blue dress to wear to work\")";
     randomGreeting = emoji.emojify(randomGreeting);
     return getAttachment.getGreetingAttachment(session, randomGreeting);
 }
@@ -129,31 +147,6 @@ bot.dialog('/', function (session) {
                             break;
                         case "search":
                             session.beginDialog('/search', data);
-                            /*builder.Prompts.choice(session, "Are we shopping for a man or a woman today?", "man|woman|(quit)");
-                            //check if search contains colour, object or gender parameters
-                            //if it's missing the gender parameter start getGender dialog & return here
-                            //(randomly?) select in mongodb based on parameters
-
-                            var reply;
-
-                            product.all(function (products) {
-                                var sendReply = function (reply) {
-                                    session.send(reply);
-                                }
-                                var getReply = function (cards, callback) {
-                                    var reply = new builder.Message(session)
-                                        .attachmentLayout(builder.AttachmentLayout.carousel)
-                                        .attachments(cards);
-                                    callback(reply);
-                                }
-                                var getCards = function (callback) {
-                                    var cards = getAttachment.getCardsAttachments(products);
-                                    callback(cards, sendReply);
-                                };
-                                getCards(getReply);
-                            })*/
-
-                            // create reply with Carousel AttachmentLayout
                             break;
                         case "identity":
                             var reply = "I am NLPurchase, your free shopping assistant! :smiley: " +
@@ -162,20 +155,11 @@ bot.dialog('/', function (session) {
                             session.send(reply);
                             break;
                         case "joke":
-                            var jokes = ["I have a part-time job helping a one armed typist do capital letters. It's shift work",
-                                "I only have two complaints in life: not enough closet space and nothing to wear.",
-                                "My friend asked me to help him round up his 37 sheep. I said \"40\".",
-                                "A husband says to his programmer wife, \"Go to the store and buy a loaf of bread. If they have eggs, buy a dozen.\" " +
-                                "Wife returns with 12 loaves of bread.",
-                                "Two cows are grazing in a field. One cow says to the other, \"you ever worry about that mad cow disease?\". " +
-                                "The other cow says, \"why would I care? I'm a helicopter!\"",
-                                "There are 10 kinds of people in the world: those who know binary, and those who don't.",
-                                "What did the Buddhist monk say to the hot dog vendor? \"Make me one with everything.\"",
-                                "Guy walks into a bar and orders a fruit punch. Bartender says \"Pal, if you want a punch you'll have to stand in line.\ " +
-                                "Guy looks around, but there is no punch line.",
-                                "Red sky at night: shepherd’s delight. Blue sky at night: day.",
-                                "I spilled spot remover on my dog. Now he's gone.",
-                                "You'll never be as lazy as whoever named the fireplace"];
+                            var jokes = ["I only have two complaints in life: not enough closet space and nothing to wear.",
+                                "A husband calls his programmer wife and tells her, \"While you're out, buy some milk.\" "
+                                + "She never returns.",
+                                "A SQL query goes into a bar, walks up to two tables and asks, \"Can I join you?\"",
+                                "If at first you don’t succeed; call it version 1.0."];
                             session.send(jokes);
                             break;
                         case "restart":
@@ -184,7 +168,11 @@ bot.dialog('/', function (session) {
                             reply = getGreeting(session);
                             session.send(reply);
                         case "inpiration":
-                            session.beginDialog('/inspiration');
+                            if (data.entities.keyword != null) {
+                                session.beginDialog('/displayCarousel', data.entities.keyword[0].value);
+                            } else {
+                                session.beginDialog('/inspiration');
+                            }
                         case "help":
                             session.beginDialog('/help');
                         case "formality":
@@ -200,8 +188,7 @@ bot.dialog('/', function (session) {
             })
             .catch(console.error);
     } else {
-        //the user has sent a sticker/location/image/audio/etc; bot can't respond to those
-        var reply = "Well, I hope that's a good thing! :smile:";
+        var reply = "I hope that means you like it! :smile:";
         reply = emoji.emojify(reply);
         session.send(reply);
     }
@@ -317,7 +304,10 @@ bot.dialog('/search', [
         product.find(session.dialogData.search.gender, session.dialogData.search.category, session.dialogData.search.colour, function (products) {
             if (products !== null) {
                 var sendReply = function (reply) {
-                    session.send(reply);
+                    session.send(emoji.emojify("How 'bout these? :grin:"));
+                    setTimeout(function () {
+                        session.send(reply);
+                    }, 500);
                     session.endDialog();
                 }
                 var getReply = function (cards, callback) {
@@ -344,7 +334,7 @@ bot.dialog('/ensureSearchEntities', [
         session.sendTyping();
         session.dialogData.search = args || {};
         if (!session.dialogData.search.gender) {
-            builder.Prompts.choice(session, "Are we shopping for a man or a woman today?", "man|woman");
+            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
         } else {
             next();
         }
@@ -385,15 +375,78 @@ bot.dialog('/ensureSearchEntities', [
 ]);
 
 bot.beginDialogAction('inspiration', '/inspiration', { matches: /^inspiration/i });
-bot.dialog('/inspiration', function (session) {
-    session.sendTyping();
-    session.send("Inspiration activated");
-    session.clearDialogStack();
-});
+bot.dialog('/inspiration', [
+    function (session) {
+        session.sendTyping();
+        builder.Prompts.choice(session, "Do you want to see what's trending for men or women?", "men|women");
+    },
+    function (session, results) {
+        session.sendTyping();
+        if (results.response.entity == 'men') {
+            session.userData.gender = 'man';
+        } else {
+            session.userData.gender = 'woman';
+        }
+        var sendReply = function (reply) {
+            session.send(emoji.emojify("No problemo, just check out these hot trends for Spring/Summer 2017!"));
+            setTimeout(function () {
+                session.send(reply);
+                session.endDialog();
+            }, 500);
+        }
+        var getReply = function (cards, callback) {
+            var reply = new builder.Message(session)
+                .attachmentLayout(builder.AttachmentLayout.carousel)
+                .attachments(cards);
+            callback(reply);
+        }
+        var getCards = function (callback) {
+            var cards = getAttachment.getKeywordsCardsAttachments(categoryKeys.trendWheel, session);
+            callback(cards, sendReply);
+        };
+        getCards(getReply);
+    }
+]);
 
 bot.beginDialogAction('style profile', '/styleProfile', { matches: /^style profile/i });
 bot.dialog('/styleProfile', function (session) {
     session.sendTyping();
     session.send("Style Profile activated");
+    session.endDialog();
+});
+
+bot.beginDialogAction('reset', '/reset', { matches: /^reset/i });
+bot.dialog('/reset', function (session) {
+    session.send("Conversation reset");
+    session.clearDialogStack();
+});
+
+bot.dialog('/displayCarousel', function (session, keyword) {
+    session.sendTyping();
+    product.findAlt(session.userData.gender, keyword, function (products) {
+        if (products !== null) {
+            var sendReply = function (reply) {
+                session.send(emoji.emojify("How 'bout these? :grin:"));
+                setTimeout(function () {
+                    session.send(reply);
+                }, 500);
+                session.endDialog();
+            }
+            var getReply = function (cards, callback) {
+                var reply = new builder.Message(session)
+                    .attachmentLayout(builder.AttachmentLayout.carousel)
+                    .attachments(cards);
+                callback(reply);
+            }
+            var getCards = function (callback) {
+                var cards = getAttachment.getCardsAttachments(products);
+                callback(cards, sendReply);
+            };
+            getCards(getReply);
+        } else {
+            session.send(emoji.emojify("I'm sorry, we have no items matching those criteria :slightly_frowning_face:"));
+            session.endDialog();
+        }
+    })
     session.endDialog();
 });

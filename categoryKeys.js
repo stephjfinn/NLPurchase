@@ -58,7 +58,46 @@ var menClothing = {
     vests: '15691'
 }
 
+var trends = ["trench coats", "stripes", "khaki", "neon", "floral"];
+var occasions = ["beach wear", "formal", "wedding", "work", "party"];
+
+var trendWheel = [
+    {
+        title: 'Timeless Trenches ',
+        subtitle: 'So satisfying to ditch your tired winter coat for a fresh, spring one!',
+        url: 'https://s-media-cache-ak0.pinimg.com/originals/7d/31/fb/7d31fbc54f4dca7edbaf1ae445458e8f.jpg',
+        postBack: 'Show me trendy trench coats'
+    },
+    {
+        title: 'Seamless Stripes',
+        subtitle: 'Hit refresh on a time-honoured classic trend with an ode to colour',
+        url: 'http://www.slimfit-clothing.com/wp-content/uploads/2015/04/Stripes-Fashion-5.jpg',
+        postBack: 'Show me trendy stripes'
+    },
+    {
+        title: 'Khaki Gets Cool',
+        subtitle: 'Military chic or safari suave; khaki has something for everyone',
+        url: 'http://thefashiontag.com/wp-content/uploads/2017/02/khaki-trend-2017-19.jpg',
+        postBack: 'Show me trendy khaki'
+    },
+    {
+        title: 'Unnaturally Neon',
+        subtitle: 'Electric, fluorescent, vivid, eye-catching. Get your staple piece',
+        url: 'http://24.media.tumblr.com/tumblr_m7yyfzVEa71rbawo3o5_1280.jpg',
+        postBack: 'Show me trendy neon'
+    },
+    {
+        title: 'Forever Floral',
+        subtitle: 'Eye-popping florals to energise your summer dresses to your office wear',
+        url: 'https://www.selectspecs.com/fashion-lifestyle/wp-content/uploads/2016/01/Floral-eyewear-1050x700.jpg',
+        postBack: 'Show me trendy floral'
+    }
+]
+
 exports.womenShoes = womenShoes;
 exports.womenClothing = womenClothing;
 exports.menShoes = menShoes;
 exports.menClothing = menClothing;
+exports.trends = trends;
+exports.occasions = occasions;
+exports.trendWheel = trendWheel;

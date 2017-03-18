@@ -52,10 +52,80 @@ exports.doInsertion = function (categorySet, categorySetName, callback) {
     categorySelector(0);
 }
 
-function insertEbayItems(categorySetName, items, colour, category, callback) {
+exports.doAltInsertion = function (categoryId, keywords, callback) {
+    function keywordSelector(i) {
+        if (i < keywords.length) {
+            var keyword = keywords[i];
+            ebay.makeAltRequest(categoryId, keyword, function (items) {
+                if (items != null) {
+                    console.log("Got item set Category: " + categoryId + " + Keyword: " + keyword);
+                    insertAltEbayItems(categoryId, keyword, items, function () {
+                        keywordSelector(i + 1)
+                    });
+                } else {
+                    console.log("No items found for category: " + categoryId + ", keyword: " + keyword);
+                    keywordSelector(i + 1);
+                }
+            })
+        } else {
+            callback('Keywords inserted!');
+        }
+    };
+    keywordSelector(0);
+}
+
+function insertAltEbayItems(categoryId, keyword, items, callback) {
+    var unusedItems = 0;
     function insertOneItem(i) {
         if (i < items.length) {
             console.log('- ' + items[i].title);
+
+            var insert = true;
+
+            var db_item = {};
+
+            if (categoryId = '1059') {
+                db_item["gender"] = "man";
+            } else {
+                db_item["gender"] = "woman";
+            }
+            db_item["keyword"] = keyword;
+            db_item["title"] = items[i].title;
+            if (items[i].pictureURLSuperSize) {
+                db_item["url"] = items[i].pictureURLSuperSize;
+            } else if (items[i].pictureURLLarge) {
+                db_item["url"] = items[i].pictureURLLarge;
+            } else if (items[i].galleryPlusPictureURL) {
+                db_item["url"] = items[i].galleryPlusPictureURL;
+            } else {
+                insert = false;
+            }
+            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+
+            if (insert == true) {
+                product.insert(db_item, function (product) {
+                    console.log("Inserted 1 product");
+                    insertOneItem(i + 1);
+                })
+            } else {
+                unusedItems++;
+                insertOneItem(i + 1);
+            }
+        } else {
+            console.log("Uninserted items: " + unusedItems);
+            callback();
+        }
+    }
+    insertOneItem(0);
+}
+
+function insertEbayItems(categorySetName, items, colour, category, callback) {
+    var unusedItems = 0;
+    function insertOneItem(i) {
+        if (i < items.length) {
+            console.log('- ' + items[i].title);
+
+            var insert = true;
 
             var db_item = {};
 
@@ -75,15 +145,21 @@ function insertEbayItems(categorySetName, items, colour, category, callback) {
             } else if (items[i].galleryPlusPictureURL) {
                 db_item["url"] = items[i].galleryPlusPictureURL;
             } else {
-                db_item["url"] = items[i].galleryURL;
+                insert = false;
             }
             db_item["price"] = items[i].sellingStatus.currentPrice.amount;
 
-            product.insert(db_item, function (product) {
-                console.log("Inserted 1 product");
+            if (insert == true) {
+                product.insert(db_item, function (product) {
+                    console.log("Inserted 1 product");
+                    insertOneItem(i + 1);
+                })
+            } else {
+                unusedItems++;
                 insertOneItem(i + 1);
-            })
+            }
         } else {
+            console.log("Uninserted items: " + unusedItems);
             callback();
         }
     }
