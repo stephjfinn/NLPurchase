@@ -84,12 +84,12 @@ function insertAltEbayItems(categoryId, keyword, items, callback) {
 
             var db_item = {};
 
-            if (categoryId = '1059') {
+            if (categoryId == '1059') {
                 db_item["gender"] = "man";
             } else {
                 db_item["gender"] = "woman";
             }
-            db_item["keyword"] = keyword;
+            db_item["category"] = keyword;
             db_item["title"] = items[i].title;
             if (items[i].pictureURLSuperSize) {
                 db_item["url"] = items[i].pictureURLSuperSize;

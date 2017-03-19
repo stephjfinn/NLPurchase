@@ -37,34 +37,34 @@ var occasions = categoryKeys.occasions;
 
 //CLEARING AND REINSERTING PRODUCTS - CURRENTLY UPDATE IS NOT NEEDED
 //drop existing product table
-/*product.clear();
+/*product.clear();*/
 
 //making ebay calls
 //insert.doInsertion(womenShoes, 'womenShoes', function (results) {
 //    console.log(results);
 //    insert.doInsertion(menShoes, 'menShoes', function (results) {
 //      console.log(results);
-insert.doInsertion(womenClothing, 'womenClothing', function (results) {
+/*insert.doInsertion(womenClothing, 'womenClothing', function (results) {
     console.log(results);
     insert.doInsertion(menClothing, 'menClothing', function (results) {
+        console.log(results);*/
+/*insert.doAltInsertion('1059', trends, function (results) {
+    console.log(results);
+    insert.doAltInsertion('15724', trends, function (results) {
         console.log(results);
-        insert.doAltInsertion('1059', trends, function (results) {
-            console.log(results);
-            insert.doAltInsertion('15724', trends, function (results) {
-                console.log(results);
-                insert.doAltInsertion('1059', occasions, function (results) {
-                    console.log(results);
-                    insert.doAltInsertion('15724', occasions, function (results) {
-                        console.log(results);
-                    })
-                })
-            })
-        })
+//        insert.doAltInsertion('1059', occasions, function (results) {
+//            console.log(results);
+//            insert.doAltInsertion('15724', occasions, function (results) {
+//                console.log(results);
+//            })
+//        })
     })
-})
+})*/
+//   })
+//})
 //    })
 //});
-*/
+
 
 //**bot setup
 
@@ -167,17 +167,21 @@ bot.dialog('/', function (session) {
                             session.send(reply);
                             reply = getGreeting(session);
                             session.send(reply);
-                        case "inpiration":
-                            if (data.entities.keyword != null) {
+                            break;
+                        case "inspiration":
+                            if (data.entities.keyword[0] != null) {
                                 session.beginDialog('/displayCarousel', data.entities.keyword[0].value);
                             } else {
                                 session.beginDialog('/inspiration');
                             }
+                            break;
                         case "help":
                             session.beginDialog('/help');
+                            break;
                         case "formality":
                             var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("I feel energised and ready to shop :muscle: Let's get started!"))
                             session.send(reply);
+                            break;
                     }
                 } else {
                     var reply = ["I'm sorry, could you say that again?",
@@ -195,89 +199,6 @@ bot.dialog('/', function (session) {
 });
 
 bot.beginDialogAction('search', '/search', { matches: /^search/i });
-/*bot.dialog('/search', function (session) {
-    session.sendTyping();
-    session.send("Search activated");
-    session.endDialog();
-});*/
-
-/*bot.dialog('/search', [
-    function (session, data) {
-        session.sendTyping();
-        session.send("Great! Let's get started.");
-
-        if (data.entities['category'] != 'undefined') {
-            session.dialogData.search.category = entities.category[0].value;
-        }
-        if (data.entities['gender'] != 'undefined') {
-            session.dialogData.search.gender = entities.gender[0].value;
-        }
-        if (data.entities['colour'] != 'undefined') {
-            session.dialogData.search.colour = entities.colour[0].value;
-        }
-
-        //if we don't have a gender
-        if (session.dialogData.gender == 'undefined') {
-            builder.Prompts.choice(session, "Are we shopping for a man or a woman today?", "man|woman");
-        } else {
-            next()
-        }
-
-        if (session.userData.gender == 'undefined') {
-        } else if (session.userData.category == 'undefined') {
-            builder.Prompts.choice(session, "In which category? Feel free to type your own.", "coats|pants|sweaters|casual shirts");
-        } else if (session.userData.colour == 'undefined') {
-            builder.Prompts.choice(session, "What colour were you thinking? Or enter your own below.", "black|silver|orange|multicolour|beige");
-        } else {
-            //call DB with entities and build carousel
-        }
-    },
-    function (session, results) {
-        session.sendTyping();
-        if (session.dialogData.gender == 'undefined') {
-            session.dialogData.gender = response.results.entity;
-        }
-        if (session.dialogData.category == 'undefined') {
-            builder.Prompts.choice(session, "In which category? Feel free to type your own.", "dresses|jeans|skirts|hoodies");
-        } else {
-            next();
-        }
-        if (session.userData.gender == 'undefined') {
-            session.userData.gender = results.response.entity;
-        } else if (session.userData.category == 'undefined') {
-            session.userData.category = results.response.entity
-        }
-        if (session.userData.gender == 'man') {
-        } else if (session.userData.gender == 'woman') {
-            builder.Prompts.choice(session, "In which category? Feel free to type your own.", "dresses|jeans|skirts|hoodies");
-        } else {
-            session.send("Quitting search dialog.");
-            session.endDialog();
-            session.userData = null;
-        }
-    },
-    function (session, results) {
-        session.sendTyping();
-        if (session.dialogData.category == 'undefined') {
-            session.dialogData.category = response.results.entity;
-        }
-    },
-    function (session, results) {
-        session.sendTyping();
-        client.message(session.message.text, {})
-            .then((data) => {
-                if (data.entities['colour'] != 'undefined') {
-                    session.userData.colour = data.entities.colour[0].value;
-
-
-                } else {
-                    session.send("Quitting search dialog.");
-                    session.endDialog();
-                }
-            })
-            .catch(console.error);
-    },
-]);*/
 
 bot.dialog('/search', [
     function (session, data) {
@@ -409,44 +330,102 @@ bot.dialog('/inspiration', [
 ]);
 
 bot.beginDialogAction('style profile', '/styleProfile', { matches: /^style profile/i });
-bot.dialog('/styleProfile', function (session) {
-    session.sendTyping();
-    session.send("Style Profile activated");
-    session.endDialog();
-});
+bot.dialog('/styleProfile', [
+    function (session) {
+        session.sendTyping();
+        session.dialogData.search = args || {};
+        builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
+    },
+    function (session, results) {
+        session.sendTyping();
+        session.dialogData.search.gender = results.response.entity;
+        builder.Prompts.choice(session, "What's your favourite colour?", "Black|Silver|Orange|Multi-Color|Beige");
+    },
+    function (session, results) {
+        session.sendTyping();
+        session.dialogData.search.colour = results.response.entity;
+        builder.Prompts.choice(session, "Do you like animal prints?", "yes|no");
+    },
+    function (session, results, next) {
+        session.sendTyping();
+        session.dialogData.search.animalprints = results.response.entity;
+        if (session.dialogData.search.gender == "woman") {
+            builder.Prompts.choice(session, "Are you girly?", "yes|no");
+        } else {
+            next();
+        }
+    },
+    function (session, results) {
+        session.sendTyping();
+        if (results.response) {
+            session.dialogData.search.girly = results.response.entity;
+        }
+        builder.Prompts.choice(session, "Are you athletic?", "yes|no");
+    },
+    function (session, results) {
+        session.sendTyping();
+        session.dialogData.search.athletic = results.response.entity;
+        builder.Prompts.choice(session, "Is work formal or casual?", "formal|no");
+    },
+    function (session, results) {
+        session.sendTyping();
+        session.dialogData.search.work = results.response.entity;
+        builder.Prompts.choice(session, "Do you like to swim?", "yes|no");
+    },
+    function (session, results) {
+        session.sendTyping();
+        session.dialogData.search.swim = results.response.entity;
+        session.beginDialog('/displayCarousel', { response: session.dialogData.search });
+    }
+]);
+
+bot.dialog('/displayCarousel', [
+    function (session, keyword, next) {
+        session.sendTyping();
+        session.dialogData.keyword = keyword;
+        if (!session.userData.gender) {
+            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
+        } else {
+            next();
+        }
+    },
+    function (session, results) {
+        if (results.response) {
+            session.userData.gender = results.response.entity;
+        }
+        product.findAlt(session.userData.gender, session.dialogData.keyword, function (products) {
+            if (products !== null) {
+                var sendReply = function (reply) {
+                    session.send(emoji.emojify("How 'bout these? :grin:"));
+                    setTimeout(function () {
+                        session.send(reply);
+                    }, 500);
+                    session.userData = null;
+                    session.endDialog();
+                }
+                var getReply = function (cards, callback) {
+                    var reply = new builder.Message(session)
+                        .attachmentLayout(builder.AttachmentLayout.carousel)
+                        .attachments(cards);
+                    callback(reply);
+                }
+                var getCards = function (callback) {
+                    var cards = getAttachment.getCardsAttachments(products);
+                    callback(cards, sendReply);
+                };
+                getCards(getReply);
+            } else {
+                session.send(emoji.emojify("I'm sorry, we have no items matching those criteria :slightly_frowning_face:"));
+                session.userData = null;
+                session.endDialog();
+            }
+        })
+    }
+]);
 
 bot.beginDialogAction('reset', '/reset', { matches: /^reset/i });
 bot.dialog('/reset', function (session) {
     session.send("Conversation reset");
+    session.userData = null;
     session.clearDialogStack();
-});
-
-bot.dialog('/displayCarousel', function (session, keyword) {
-    session.sendTyping();
-    product.findAlt(session.userData.gender, keyword, function (products) {
-        if (products !== null) {
-            var sendReply = function (reply) {
-                session.send(emoji.emojify("How 'bout these? :grin:"));
-                setTimeout(function () {
-                    session.send(reply);
-                }, 500);
-                session.endDialog();
-            }
-            var getReply = function (cards, callback) {
-                var reply = new builder.Message(session)
-                    .attachmentLayout(builder.AttachmentLayout.carousel)
-                    .attachments(cards);
-                callback(reply);
-            }
-            var getCards = function (callback) {
-                var cards = getAttachment.getCardsAttachments(products);
-                callback(cards, sendReply);
-            };
-            getCards(getReply);
-        } else {
-            session.send(emoji.emojify("I'm sorry, we have no items matching those criteria :slightly_frowning_face:"));
-            session.endDialog();
-        }
-    })
-    session.endDialog();
 });

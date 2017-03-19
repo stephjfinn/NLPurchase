@@ -19,7 +19,7 @@ var menShoes = {
     //slippers: '11505'
 };
 var womenClothing = {
-    athletic: '137085',
+    //athletic: '137085',
     coats: '63862', //coats & jackets
     dresses: '63861',
     //hosiery: '11524', //hosiery & socks
@@ -42,7 +42,7 @@ var menClothing = {
     casualShirts: '57990',
     dressShirts: '57991',
     tshirts: '15687',
-    athletic: '137084',
+    //athletic: '137084',
     blazers: '3002', //blazers & sports coats
     coats: '57988', //coats & jackets
     jeans: '11483',
@@ -66,6 +66,7 @@ var trendWheel = [
         title: 'Timeless Trenches ',
         subtitle: 'So satisfying to ditch your tired winter coat for a fresh, spring one!',
         url: 'https://s-media-cache-ak0.pinimg.com/originals/7d/31/fb/7d31fbc54f4dca7edbaf1ae445458e8f.jpg',
+        btnText: 'Search trench coats',
         postBack: 'Show me trendy trench coats'
     },
     {

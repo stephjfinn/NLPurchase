@@ -25,7 +25,7 @@ exports.all = function (callback) {
 };
 
 exports.find = function (gender, category, colour, callback) {
-    Product.find({ "gender":gender, "colour":colour, "category":category }, function (err, products) {
+    Product.find({ "gender": gender, "colour": colour, "category": category }, function (err, products) {
         if (err) {
             console.log(err);
             callback(null);
@@ -40,7 +40,7 @@ exports.find = function (gender, category, colour, callback) {
 };
 
 exports.findAlt = function (gender, keyword, callback) {
-    Product.find({ "gender":gender, "keyword":keyword }, function (err, products) {
+    Product.find({ "gender": gender, "category": keyword }, function (err, products) {
         if (err) {
             console.log(err);
             callback(null);
@@ -53,6 +53,18 @@ exports.findAlt = function (gender, keyword, callback) {
         }
     });
 };
+
+/*function queryBuilder(queryData) {
+    var query = {};
+    query.gender = queryData.gender;
+    if (query.category) {
+        query.category = queryData.category;
+    }
+    if (query.colour) {
+        query.colour = queryData.colour;
+    }
+    if (query.)
+}*/
 
 exports.insert = function (item, callback) {
     Product.create({
