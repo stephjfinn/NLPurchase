@@ -1,14 +1,9 @@
-//NOTE TO SELF: shift + alt + f = format indentation
+//REQUIRES
 var db = require('./db');
-
 var product = require('./controllers/products');
 var restify = require('restify');
 var builder = require('botbuilder');
 const { Wit, log } = require('node-wit');
-var server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 80, function () {
-    console.log('%s listening to %s', server.name, server.url);
-});
 var categoryKeys = require('./categoryKeys');
 var async = require('async');
 var insert = require('./insertion');
@@ -17,6 +12,18 @@ var emoji = require('node-emoji');
 var setFbMenus = require('./setFbMenus');
 var fs = require('fs');
 
+//BOOLEANS
+var fbMenusReset = false;
+var dropCollection = false;
+var doInserts = false;
+
+//CREATE BOT SERVER
+var server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 80, function () {
+    console.log('%s listening to %s', server.name, server.url);
+});
+
+//OTHER VARIABLES
 var womenShoes = categoryKeys.womenShoes;
 var menShoes = categoryKeys.menShoes;
 var womenClothing = categoryKeys.womenClothing;
@@ -24,49 +31,46 @@ var menClothing = categoryKeys.menClothing;
 var trends = categoryKeys.trends;
 var occasions = categoryKeys.occasions;
 
-/*SET FACEBOOK MENU THINGS*/
-//setFbMenus.setAllMenus();
+//SET FACEBOOK MENU THINGS
+if (fbMenusReset == true) {
+    setFbMenus.setAllMenus();
+}
 
-//drop collection
-/*product.clear();*/
+//CLEARING AND REINSERTING PRODUCTS
+//DROP EXISTING PRODUCT TABLE
+if (dropCollection == true) {
+    product.clear();
+}
 
-//return all products
-/*product.all(function(products) {
-    console.log(products);
-})*/
-
-//CLEARING AND REINSERTING PRODUCTS - CURRENTLY UPDATE IS NOT NEEDED
-//drop existing product table
-/*product.clear();*/
-
-//making ebay calls
-//insert.doInsertion(womenShoes, 'womenShoes', function (results) {
-//    console.log(results);
-//    insert.doInsertion(menShoes, 'menShoes', function (results) {
-//      console.log(results);
-/*insert.doInsertion(womenClothing, 'womenClothing', function (results) {
-    console.log(results);
-    insert.doInsertion(menClothing, 'menClothing', function (results) {
-        console.log(results);*/
-/*insert.doAltInsertion('1059', trends, function (results) {
-    console.log(results);
-    insert.doAltInsertion('15724', trends, function (results) {
+//MAKING EBAY CALLS FOR PRODUCTS AND INSERTING PRODUCTS INTO DB
+if (doInserts == true) {
+    //insert.doInsertion(womenShoes, 'womenShoes', function (results) {
+    //    console.log(results);
+    //    insert.doInsertion(menShoes, 'menShoes', function (results) {
+    //      console.log(results);
+    insert.doInsertion(womenClothing, 'womenClothing', function (results) {
         console.log(results);
-//        insert.doAltInsertion('1059', occasions, function (results) {
-//            console.log(results);
-//            insert.doAltInsertion('15724', occasions, function (results) {
-//                console.log(results);
-//            })
-//        })
+        insert.doInsertion(menClothing, 'menClothing', function (results) {
+            console.log(results);
+            insert.doAltInsertion('1059', trends, function (results) {
+                console.log(results);
+                insert.doAltInsertion('15724', trends, function (results) {
+                    console.log(results);
+                    //        insert.doAltInsertion('1059', occasions, function (results) {
+                    //            console.log(results);
+                    //            insert.doAltInsertion('15724', occasions, function (results) {
+                    //                console.log(results);
+                    //            })
+                    //        })
+                })
+            })
+        })
     })
-})*/
-//   })
-//})
-//    })
-//});
+    //    })
+    //})
+}
 
-
-//**bot setup
+//**BOT SETUP
 
 //create chat bot
 var connector = new builder.ChatConnector({
@@ -142,6 +146,8 @@ bot.dialog('/', function (session) {
                 if (data.entities.intent != null) {
                     switch (data.entities.intent[0].value) {
                         case "greeting":
+                            session.userData = null;
+                            session.clearDialogStack();
                             var reply = getGreeting(session);
                             session.send(reply);
                             break;
@@ -222,7 +228,7 @@ bot.dialog('/search', [
     function (session, results) {
         session.sendTyping();
         session.dialogData.search = results.response;
-        product.find(session.dialogData.search.gender, session.dialogData.search.category, session.dialogData.search.colour, function (products) {
+        product.find(session.dialogData.search, function (products) {
             if (products !== null) {
                 var sendReply = function (reply) {
                     session.send(emoji.emojify("How 'bout these? :grin:"));
@@ -348,7 +354,7 @@ bot.dialog('/styleProfile', [
     },
     function (session, results, next) {
         session.sendTyping();
-        session.dialogData.search.animalprints = results.response.entity;
+        //session.dialogData.search.animalprints = results.response.entity;
         if (session.dialogData.search.gender == "woman") {
             builder.Prompts.choice(session, "Are you girly?", "yes|no");
         } else {
@@ -358,18 +364,18 @@ bot.dialog('/styleProfile', [
     function (session, results) {
         session.sendTyping();
         if (results.response) {
-            session.dialogData.search.girly = results.response.entity;
+            //session.dialogData.search.girly = results.response.entity;
         }
         builder.Prompts.choice(session, "Are you athletic?", "yes|no");
     },
     function (session, results) {
         session.sendTyping();
-        session.dialogData.search.athletic = results.response.entity;
+        //session.dialogData.search.athletic = results.response.entity;
         builder.Prompts.choice(session, "Is work formal or casual?", "formal|no");
     },
     function (session, results) {
         session.sendTyping();
-        session.dialogData.search.work = results.response.entity;
+        //session.dialogData.search.work = results.response.entity;
         builder.Prompts.choice(session, "Do you like to swim?", "yes|no");
     },
     function (session, results) {
@@ -393,7 +399,10 @@ bot.dialog('/displayCarousel', [
         if (results.response) {
             session.userData.gender = results.response.entity;
         }
-        product.findAlt(session.userData.gender, session.dialogData.keyword, function (products) {
+        var queryData = {};
+        queryData.gender = session.userData.gender;
+        queryData.category = session.dialogData.keyword;
+        product.find(queryData, function (products) {
             if (products !== null) {
                 var sendReply = function (reply) {
                     session.send(emoji.emojify("How 'bout these? :grin:"));

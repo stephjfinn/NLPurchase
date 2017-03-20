@@ -29,7 +29,7 @@ exports.getCardsAttachments = function (products, session) {
             ])
             .buttons([
                 builder.CardAction.openUrl(session, 'https://google.ie', 'Buy'),
-                builder.CardAction.openUrl(session, 'https://google.ie', 'More like this'),
+                builder.CardAction.openUrl(session, 'https://google.ie', 'Build me an outfit with this!'),
                 builder.CardAction.openUrl(session, 'https://google.ie', emoji.emojify(':heart:'))
             ])
         cards.push(newcard)
