@@ -11,6 +11,7 @@ var getAttachment = require('./getAttachment');
 var emoji = require('node-emoji');
 var setFbMenus = require('./setFbMenus');
 var fs = require('fs');
+const request = require('request');
 
 //BOOLEANS
 var fbMenusReset = false;
@@ -79,6 +80,29 @@ var connector = new builder.ChatConnector({
 });
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
+//callbacks exposed for the business website to call on completion of purchase
+server.get('/api/callbackOk', function (req, res, next) {
+    var urlSplit = req.url.split("?");
+    if (urlSplit[1]) {
+        var user = urlSplit[1];
+        sendTextMessage(user, emoji.emojify("Thank you! Your super cool purchase is complete and on it's way :grin:"));
+        res.send(200);
+    } else {
+        res.send(400);
+    }
+    return next();
+});
+server.get('/api/callbackErr', function (req, res, next) {
+    var urlSplit = req.url.split("?");
+    if (urlSplit[1]) {
+        var user = urlSplit[1];
+        sendTextMessage(user, emoji.emojify("I'm sorry, there was an error during processing :sob: Please press buy to try again!"));
+        res.send(200);
+    } else {
+        res.send(400);
+    }
+    return next();
+});
 
 const client = new Wit({
     accessToken: '***REMOVED***',
@@ -185,7 +209,7 @@ bot.dialog('/', function (session) {
                             session.beginDialog('/help');
                             break;
                         case "formality":
-                            var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("I feel energised and ready to shop :muscle: Let's get started!"))
+                            var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("My power levels are :100: and I'm ready to shop :muscle: Let's get started!"))
                             session.send(reply);
                             break;
                     }
@@ -244,7 +268,7 @@ bot.dialog('/search', [
                     callback(reply);
                 }
                 var getCards = function (callback) {
-                    var cards = getAttachment.getCardsAttachments(products);
+                    var cards = getAttachment.getCardsAttachments(session, products);
                     callback(cards, sendReply);
                 };
                 getCards(getReply);
@@ -273,8 +297,14 @@ bot.dialog('/ensureSearchEntities', [
         }
         if (!session.dialogData.search.category) {
             if (session.dialogData.search.gender == "woman") {
+                /*var options = ["dresses", "jeans", "skirts", "hoodies"];
+                session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
+                session.beginDialog('/category');*/
                 builder.Prompts.choice(session, "In which category? Feel free to type your own.", "dresses|jeans|skirts|hoodies");
             } else {
+                /*var options = ["coats", "pants", "sweaters", "casual shirts"];
+                session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
+                session.beginDialog('/category');*/
                 builder.Prompts.choice(session, "In which category? Feel free to type your own.", "coats|pants|sweaters|casual shirts");
             }
         } else {
@@ -300,6 +330,20 @@ bot.dialog('/ensureSearchEntities', [
         session.endDialogWithResult({ response: session.dialogData.search });
     }
 ]);
+
+/*bot.dialog('/category',
+    function (session) {
+        client.message(session.message.text, {})
+            .then((data) => {
+                if (data.entities != null) {
+                    if (data.entities.category != null) {
+                        var category = category[0];
+                        session.endDialogWithResult(category);
+                    } else session.endDialogWithResult(null);
+                }
+            })
+    }
+);*/
 
 bot.beginDialogAction('inspiration', '/inspiration', { matches: /^inspiration/i });
 bot.dialog('/inspiration', [
@@ -419,7 +463,7 @@ bot.dialog('/displayCarousel', [
                     callback(reply);
                 }
                 var getCards = function (callback) {
-                    var cards = getAttachment.getCardsAttachments(products);
+                    var cards = getAttachment.getCardsAttachments(session, products);
                     callback(cards, sendReply);
                 };
                 getCards(getReply);
@@ -438,3 +482,23 @@ bot.dialog('/reset', function (session) {
     session.userData = null;
     session.clearDialogStack();
 });
+
+function sendTextMessage(sender, text) {
+    let messageData = { text: text }
+
+    request({
+        url: 'https://graph.facebook.com/v2.6/me/messages',
+        qs: { access_token: "***REMOVED***" },
+        method: 'POST',
+        json: {
+            recipient: { id: sender },
+            message: messageData,
+        }
+    }, function (error, response, body) {
+        if (error) {
+            console.log('Error sending messages: ', error)
+        } else if (response.body.error) {
+            console.log('Error: ', response.body.error)
+        }
+    })
+}
