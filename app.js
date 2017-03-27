@@ -453,7 +453,7 @@ bot.dialog('/help', function (session) {
 });
 
 bot.beginDialogAction('favourites', '/favourites', { matches: /^favourites/i });
-bot.dialog('/help', function (session) {
+bot.dialog('/favourites', function (session) {
     session.send("Here are your favourites, " + getFirstName(session.message.user.name) + "!");
     //add functionality for displaying favourites carousel
     //get products id from user data

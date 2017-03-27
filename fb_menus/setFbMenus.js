@@ -1,5 +1,5 @@
 var request = require('request');
-var FB_PAGE_ACCESS_TOKEN = '***REMOVED***';
+var FB_PAGE_ACCESS_TOKEN = 'EAAFMC7iBBdQBAKZCgNkP7ZBeT6jpRmqlnZA4JDIHGsZB4TUZCn0ZCq4IRlcAZCmlWQrxSqhr8GDv5pR789ZAZAKMMiRVztWOQbRzIQ7FtaQp5avQpvZBasXDZBu7SxTeVcSHvqWqoT5R0A0YsY83sJ0TrD21S7ZBsItvZBqAwjkJagtC9KQZDZD';
 
 //=========================================================
 // Facebook setup // Run only when need updating.
