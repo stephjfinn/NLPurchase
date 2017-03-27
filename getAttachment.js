@@ -5,7 +5,7 @@ exports.getGreetingAttachment = function (session, greeting) {
     var card = new builder.HeroCard(session)
         .text(greeting)
         .buttons([
-            builder.CardAction.postBack(session, 'search', emoji.emojify('Let\'s search :mag:')),
+            builder.CardAction.postBack(session, 'search', emoji.emojify('Help me shop :mag:')),
             builder.CardAction.postBack(session, 'inspiration', emoji.emojify('Inspire me! :bulb:')),
             builder.CardAction.postBack(session, 'style profile', emoji.emojify('Style profile :memo:'))
         ]);
@@ -30,21 +30,41 @@ exports.getCardsAttachments = function (session, products) {
 
     for (var i = 0; i < count; i++) {
         var productInfo = {
-            'name': products[i].colour + products[i].subcategory,
-            'description': products[i].title,
+            //'name': products[i].colour + products[i].subcategory,
+            'name': products[i].title,
             'reference': session.message.address.user.id,
             'amount': products[i].price
         };
+        var price = products[i].price;
+        function isInt(n) {
+            return n % 1 === 0;
+        }
+        function addZeroes(num) {
+            var value = Number(num);
+            var res = num.split(".");
+            if (num.indexOf('.') === -1) {
+                value = value.toFixed(2);
+                num = value.toString();
+            } else if (res[1].length < 3) {
+                value = value.toFixed(2);
+                num = value.toString();
+            }
+            return num;
+        }
+        if (isInt(price)) {
+            price = addZeroes(price);
+        }
         var queryString = encodeQueryData(productInfo);
         var newcard = new builder.HeroCard(session)
             .title(products[i].title)
+            .subtitle("$" + price)
             .images([
                 builder.CardImage.create(session, products[i].pictureURL)
             ])
             .buttons([
                 builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy'),
                 builder.CardAction.postBack(session, 'build', 'Build an outfit'),
-                builder.CardAction.postBack(session, 'favourite', emoji.emojify(':heart:'))
+                builder.CardAction.postBack(session, 'add favourites product_id ' + products[i]._id, emoji.emojify(':heart:'))
             ])
         cards.push(newcard)
     }
@@ -76,10 +96,10 @@ exports.getQuickReplies = function (session, message, replies) {
 
     for (var i = 0; i < count; i++) {
         var newreply = {
-                        "content_type": "text",
-                        "title": replies[i],
-                        "payload": replies[i]
-                    };
+            "content_type": "text",
+            "title": replies[i],
+            "payload": replies[i]
+        };
         quickreplies.push(newreply);
     }
 

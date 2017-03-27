@@ -11,6 +11,7 @@
   "dependencies": {
     "async": "^2.1.5",
     "botbuilder": "^3.5.4",
+    "dotenv": "^4.0.0",
     "ebay": "0.0.1",
     "ebay-api": "^1.13.1",
     "emoji": "^0.3.2",

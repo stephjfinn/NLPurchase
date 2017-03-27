@@ -1,6 +1,5 @@
 var mongoose = require('mongoose');
-var config = require('./config');
-var uri = config.creds.mongoose_local;
+var uri = process.env.MONGOOSE_LOCAL_URI;
 
 function connect() {
   mongoose.connect(uri)

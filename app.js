@@ -1,17 +1,19 @@
 //REQUIRES
+require('dotenv').config({path: './keys.env'})
 var db = require('./db');
 var product = require('./controllers/products');
 var restify = require('restify');
 var builder = require('botbuilder');
-const { Wit, log } = require('node-wit');
 var categoryKeys = require('./categoryKeys');
 var async = require('async');
 var insert = require('./insertion');
 var getAttachment = require('./getAttachment');
 var emoji = require('node-emoji');
-var setFbMenus = require('./setFbMenus');
+var setFbMenus = require('./fb_menus/setFbMenus');
 var fs = require('fs');
 const request = require('request');
+var wit = require('./wit');
+var client = wit.client();
 
 //BOOLEANS
 var fbMenusReset = false;
@@ -32,18 +34,15 @@ var menClothing = categoryKeys.menClothing;
 var trends = categoryKeys.trends;
 var occasions = categoryKeys.occasions;
 
-//SET FACEBOOK MENU THINGS
+//SET FACEBOOK MENUS
 if (fbMenusReset == true) {
     setFbMenus.setAllMenus();
 }
-
-//CLEARING AND REINSERTING PRODUCTS
-//DROP EXISTING PRODUCT TABLE
+//DROP EXISTING PRODUCT TABLE FROM DB
 if (dropCollection == true) {
     product.clear();
 }
-
-//MAKING EBAY CALLS FOR PRODUCTS AND INSERTING PRODUCTS INTO DB
+//MAKE EBAY CALLS FOR PRODUCTS AND INSERT PRODUCTS INTO DB
 if (doInserts == true) {
     //insert.doInsertion(womenShoes, 'womenShoes', function (results) {
     //    console.log(results);
@@ -71,21 +70,22 @@ if (doInserts == true) {
     //})
 }
 
-//**BOT SETUP
+//**BOT SETUP**
 
-//create chat bot
+//BOT SETUP: INITIALISE CHATBOT
 var connector = new builder.ChatConnector({
-    appId: '***REMOVED***',
-    appPassword: '***REMOVED***'
+    appId: process.env.BOT_APP_ID,
+    appPassword: process.env.BOT_APP_PASSWORD
 });
 var bot = new builder.UniversalBot(connector);
+//listen for incoming messages
 server.post('/api/messages', connector.listen());
 //callbacks exposed for the business website to call on completion of purchase
 server.get('/api/callbackOk', function (req, res, next) {
     var urlSplit = req.url.split("?");
     if (urlSplit[1]) {
         var user = urlSplit[1];
-        sendTextMessage(user, emoji.emojify("Thank you! Your super cool purchase is complete and on it's way :grin:"));
+        sendTextMessage(user, emoji.emojify("Thank you! Your super cool purchase is complete and on its way to your wardrobe :grin:"));
         res.send(200);
     } else {
         res.send(400);
@@ -104,46 +104,6 @@ server.get('/api/callbackErr', function (req, res, next) {
     return next();
 });
 
-const client = new Wit({
-    accessToken: '***REMOVED***',
-    actions: {
-        send(request, response) {
-            return new Promise(function (resolve, reject) {
-                console.log(JSON.stringify(response));
-                return resolve();
-            });
-        },
-
-        myAction({ sessionId, context, text, entities }) {
-            console.log(`Session ${sessionId} received ${text}`);
-            console.log(`The current context is ${JSON.stringify(context)}`);
-            console.log(`Wit extracted ${JSON.stringify(entities)}`);
-            return Promise.resolve(context);
-        }
-    },
-    logger: new log.Logger(log.DEBUG) // optional
-});
-
-function getGreeting(session) {
-    function getFirstName(str) {
-        if (str.indexOf(' ') === -1)
-            return str;
-        else
-            return str.substr(0, str.indexOf(' '));
-    };
-
-    var greetingArray = ["Hi " + getFirstName(session.message.user.name) + ", what can I help you with today?",
-    "Hello " + getFirstName(session.message.user.name) + ", I'm NLPurchase!  What can I get you?",
-    "Hey " + getFirstName(session.message.user.name) + ", what are you looking for?"];
-    var randomIndex = Math.floor(Math.random() * greetingArray.length);
-    var randomGreeting = greetingArray[randomIndex];
-    randomGreeting += " Choose from the options below or try a sentence (e.g. \"I'm looking for a blue dress to wear to work\")";
-    randomGreeting = emoji.emojify(randomGreeting);
-    return getAttachment.getGreetingAttachment(session, randomGreeting);
-}
-
-//bot dialog
-
 // Install logging middleware
 bot.use({
     botbuilder: function (session, next) {
@@ -161,6 +121,8 @@ bot.use({
         }
     }
 });
+
+//**BOT DIALOGS**
 
 bot.dialog('/', function (session) {
     session.sendTyping();
@@ -212,6 +174,18 @@ bot.dialog('/', function (session) {
                             var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("My power levels are :100: and I'm ready to shop :muscle: Let's get started!"))
                             session.send(reply);
                             break;
+                        case "thanks":
+                            session.send("No problem, " + getFirstName(session.message.user.name) + "!"|emoji.emojify("Glad I could help! :blush:")|emoji.emojify("You are very welcome! :grinning:"));
+                            break;
+                        case "favourites":
+                            if (data.entities.trigger[0] != null && data.entities.add_or_remove[0] != null) {
+                                //check if "add" or "remove"
+                                //get product ID from end of sentence and do functionality of adding or removing favourites
+                                session.send(emoji.emoji("Product was added to your favourites! :thumbsup:"));
+                            } else {
+                                session.beginDialog('/favourites');
+                            }
+                            break;
                     }
                 } else {
                     var reply = ["I'm sorry, could you say that again?",
@@ -229,7 +203,6 @@ bot.dialog('/', function (session) {
 });
 
 bot.beginDialogAction('search', '/search', { matches: /^search/i });
-
 bot.dialog('/search', [
     function (session, data) {
         session.sendTyping();
@@ -279,7 +252,6 @@ bot.dialog('/search', [
         })
     }
 ]);
-
 bot.dialog('/ensureSearchEntities', [
     function (session, args, next) {
         session.sendTyping();
@@ -331,20 +303,6 @@ bot.dialog('/ensureSearchEntities', [
     }
 ]);
 
-/*bot.dialog('/category',
-    function (session) {
-        client.message(session.message.text, {})
-            .then((data) => {
-                if (data.entities != null) {
-                    if (data.entities.category != null) {
-                        var category = category[0];
-                        session.endDialogWithResult(category);
-                    } else session.endDialogWithResult(null);
-                }
-            })
-    }
-);*/
-
 bot.beginDialogAction('inspiration', '/inspiration', { matches: /^inspiration/i });
 bot.dialog('/inspiration', [
     function (session) {
@@ -383,13 +341,13 @@ bot.beginDialogAction('style profile', '/styleProfile', { matches: /^style profi
 bot.dialog('/styleProfile', [
     function (session) {
         session.sendTyping();
-        session.dialogData.search = args || {};
-        builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
+        session.dialogData.search = {};
+        builder.Prompts.choice(session, "Are you a man or a woman?", emoji.emojify("man :man:|woman :woman:"));
     },
     function (session, results) {
         session.sendTyping();
         session.dialogData.search.gender = results.response.entity;
-        builder.Prompts.choice(session, "What's your favourite colour?", "Black|Silver|Orange|Multi-Color|Beige");
+        builder.Prompts.choice(session, "What's your favourite colour? Or type your own.", "Black|Silver|Orange|Multi-Color|Beige");
     },
     function (session, results) {
         session.sendTyping();
@@ -400,7 +358,7 @@ bot.dialog('/styleProfile', [
         session.sendTyping();
         //session.dialogData.search.animalprints = results.response.entity;
         if (session.dialogData.search.gender == "woman") {
-            builder.Prompts.choice(session, "Are you girly?", "yes|no");
+            builder.Prompts.choice(session, emoji.emojify("Are you girly? :dress:"), "yes|no");
         } else {
             next();
         }
@@ -410,12 +368,12 @@ bot.dialog('/styleProfile', [
         if (results.response) {
             //session.dialogData.search.girly = results.response.entity;
         }
-        builder.Prompts.choice(session, "Are you athletic?", "yes|no");
+        builder.Prompts.choice(session, emoji.emojify("Are you athletic? :running:"), "yes|no");
     },
     function (session, results) {
         session.sendTyping();
         //session.dialogData.search.athletic = results.response.entity;
-        builder.Prompts.choice(session, "Is work formal or casual?", "formal|no");
+        builder.Prompts.choice(session, "Is work formal or casual?", "formal|casual");
     },
     function (session, results) {
         session.sendTyping();
@@ -425,7 +383,9 @@ bot.dialog('/styleProfile', [
     function (session, results) {
         session.sendTyping();
         session.dialogData.search.swim = results.response.entity;
-        session.beginDialog('/displayCarousel', { response: session.dialogData.search });
+        session.send(emoji.emojify("Apologies, this isn't fully functional yet :flushed:"));
+        session.endDialog();
+        //session.beginDialog('/displayCarousel', { response: session.dialogData.search });
     }
 ]);
 
@@ -434,7 +394,7 @@ bot.dialog('/displayCarousel', [
         session.sendTyping();
         session.dialogData.keyword = keyword;
         if (!session.userData.gender) {
-            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
+            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", emoji.emojify("man :man:|woman :woman:"));
         } else {
             next();
         }
@@ -483,12 +443,31 @@ bot.dialog('/reset', function (session) {
     session.clearDialogStack();
 });
 
+bot.beginDialogAction('help', '/help', { matches: /^help/i });
+bot.dialog('/help', function (session) {
+    var reply = "I'm NLPurchase, you can talk to me to help you find items that are perfect for you or as a gift!" +
+    " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink!\")" +
+    " and I'll handle the rest. Or select one of the buttons below to try out a more guided experience.";
+    session.send(getAttachment.getGreetingAttachment(session, reply));
+    session.endDialog();
+});
+
+bot.beginDialogAction('favourites', '/favourites', { matches: /^favourites/i });
+bot.dialog('/help', function (session) {
+    session.send("Here are your favourites, " + getFirstName(session.message.user.name) + "!");
+    //add functionality for displaying favourites carousel
+    //get products id from user data
+    //select from database on product id
+    //load carousel with products
+    session.endDialog();
+});
+
 function sendTextMessage(sender, text) {
     let messageData = { text: text }
 
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
-        qs: { access_token: "***REMOVED***" },
+        qs: { access_token: process.env.FB_ACCESS_TOKEN },
         method: 'POST',
         json: {
             recipient: { id: sender },
@@ -502,3 +481,35 @@ function sendTextMessage(sender, text) {
         }
     })
 }
+
+function getFirstName(str) {
+    if (str.indexOf(' ') === -1)
+        return str;
+    else
+        return str.substr(0, str.indexOf(' '));
+};
+
+function getGreeting(session) {
+    var greetingArray = ["Hi " + getFirstName(session.message.user.name) + ", what can I help you with today?",
+    "Hello " + getFirstName(session.message.user.name) + ", I'm NLPurchase! What can I get you?",
+    "Hey " + getFirstName(session.message.user.name) + ", what are you looking for?"];
+    var randomIndex = Math.floor(Math.random() * greetingArray.length);
+    var randomGreeting = greetingArray[randomIndex];
+    session.send(randomGreeting);
+    var attachmentMsg = "Choose from the options below or try a sentence (e.g. \"I'm looking for a blue dress to wear to work for around $30\")";
+    return getAttachment.getGreetingAttachment(session, attachmentMsg);
+}
+
+/*bot.dialog('/category',
+    function (session) {
+        client.message(session.message.text, {})
+            .then((data) => {
+                if (data.entities != null) {
+                    if (data.entities.category != null) {
+                        var category = category[0];
+                        session.endDialogWithResult(category);
+                    } else session.endDialogWithResult(null);
+                }
+            })
+    }
+);*/

@@ -5,12 +5,12 @@
     {
       "type":"postback",
       "title":"Help",
-      "payload":"action?help"
+      "payload":"help"
     },
     {
       "type":"postback",
-      "title":"Goodbye",
-      "payload":"action?goodbye"
+      "title":"My Favourites",
+      "payload":"show me my favourites"
     }
   ]
 }
