@@ -33,6 +33,7 @@ exports.getCardsAttachments = function (session, products) {
             //'name': products[i].colour + products[i].subcategory,
             'name': products[i].title,
             'reference': session.message.address.user.id,
+            'product_id': products[i]._id,
             'amount': products[i].price
         };
         var price = products[i].price;

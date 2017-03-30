@@ -1,7 +1,8 @@
 //REQUIRES
-require('dotenv').config({path: './keys.env'})
+require('dotenv').config({ path: './keys.env' })
 var db = require('./db');
 var product = require('./controllers/products');
+var transaction = require('./controllers/transactions');
 var restify = require('restify');
 var builder = require('botbuilder');
 var categoryKeys = require('./categoryKeys');
@@ -80,15 +81,20 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 //listen for incoming messages
 server.post('/api/messages', connector.listen());
-//callbacks exposed for the business website to call on completion of purchase
+//callbacks exposed for the business website to call on completion/failure of purchase
 server.get('/api/callbackOk', function (req, res, next) {
-    var urlSplit = req.url.split("?");
-    if (urlSplit[1]) {
-        var user = urlSplit[1];
-        sendTextMessage(user, emoji.emojify("Thank you! Your super cool purchase is complete and on its way to your wardrobe :grin:"));
-        res.send(200);
+    var query = req._url.query;
+    if (query) {
+        var userId = getQueryVariable(query, 'userId');
+        var productId = getQueryVariable(query, 'productId');
+        var transactionData = {'userId': userId, 'productId': productId};
+        transaction.insert(transactionData, function (transactions){
+            console.log("Inserted 1 transaction");
+            sendTextMessage(userId, emoji.emojify("Thank you! Your super cool purchase is complete and on its way to your wardrobe :grin:"));
+            res.status(200);
+        })
     } else {
-        res.send(400);
+        res.status(400);
     }
     return next();
 });
@@ -96,13 +102,25 @@ server.get('/api/callbackErr', function (req, res, next) {
     var urlSplit = req.url.split("?");
     if (urlSplit[1]) {
         var user = urlSplit[1];
-        sendTextMessage(user, emoji.emojify("I'm sorry, there was an error during processing :sob: Please press buy to try again!"));
-        res.send(200);
+        sendTextMessage(user, emoji.emojify("I'm sorry, there was an error during processing :sob: Select your product and try again!"));
+        res.status(200);
     } else {
-        res.send(400);
+        res.status(400);
     }
     return next();
 });
+
+function getQueryVariable(query, variable) {
+    var vars = query.split("&");
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        if (pair[0] == variable) {
+            var decoded = decodeURI(pair[1]);
+            return decoded.replace("'", "");
+        }
+    }
+    return null;
+}
 
 // Install logging middleware
 bot.use({
@@ -175,7 +193,7 @@ bot.dialog('/', function (session) {
                             session.send(reply);
                             break;
                         case "thanks":
-                            session.send("No problem, " + getFirstName(session.message.user.name) + "!"|emoji.emojify("Glad I could help! :blush:")|emoji.emojify("You are very welcome! :grinning:"));
+                            session.send("No problem, " + getFirstName(session.message.user.name) + "!" | emoji.emojify("Glad I could help! :blush:") | emoji.emojify("You are very welcome! :grinning:"));
                             break;
                         case "favourites":
                             if (data.entities.trigger[0] != null && data.entities.add_or_remove[0] != null) {
@@ -446,8 +464,8 @@ bot.dialog('/reset', function (session) {
 bot.beginDialogAction('help', '/help', { matches: /^help/i });
 bot.dialog('/help', function (session) {
     var reply = "I'm NLPurchase, you can talk to me to help you find items that are perfect for you or as a gift!" +
-    " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink!\")" +
-    " and I'll handle the rest. Or select one of the buttons below to try out a more guided experience.";
+        " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink!\")" +
+        " and I'll handle the rest. Or select one of the buttons below to try out a more guided experience.";
     session.send(getAttachment.getGreetingAttachment(session, reply));
     session.endDialog();
 });
