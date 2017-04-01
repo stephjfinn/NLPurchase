@@ -19,8 +19,8 @@ var client = wit.client();
 
 //BOOLEANS
 var fbMenusReset = false;
-var dropCollection = false;
-var doInserts = false;
+var dropCollection = true;
+var doInserts = true;
 
 //CREATE BOT SERVER
 var server = restify.createServer();
