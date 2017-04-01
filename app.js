@@ -384,7 +384,7 @@ bot.dialog('/ensureSearchEntities', [
                 if (data.entities.gender != null) {
                     session.dialogData.search.category = data.entities.category[0].value;
                 } else {
-                    session.replaceDialog("/");
+                    session.replaceDialog("/inspiration");
                 }
             }
         }
