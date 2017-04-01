@@ -275,6 +275,10 @@ bot.dialog('/', function (session) {
                     var reply = "I'm still learning, please be constructive with your criticism! If you'd like to give feedback about me to my human overlord, please press the button below.";
                     session.send(getAttachment.getFeedbackAttachment(session, reply));
                     break;
+                case "feedback":
+                    var reply = "Please click the button below to leave feedback."
+                    session.send(getAttachment.getFeedbackAttachment(session, reply));
+                    break;
                 default:
                     var reply = ["I'm sorry, could you say that again?",
                         "I don't quite get what you mean by that, could you repeat it?",
@@ -299,6 +303,9 @@ bot.dialog('/search', [
                 session.dialogData.search = {};
                 if (typeof data.entities['category'] !== 'undefined') {
                     session.dialogData.search.category = data.entities.category[0].value;
+                    if (session.dialogData.search.category == 'dresses' || 'skirts' || 'jumpsuits') {
+                        session.dialogData.search.gender = 'woman';
+                    }
                 }
                 if (typeof data.entities['gender'] !== 'undefined') {
                     session.dialogData.search.gender = data.entities.gender[0].value;
@@ -306,13 +313,19 @@ bot.dialog('/search', [
                 if (typeof data.entities['colour'] !== 'undefined') {
                     session.dialogData.search.colour = data.entities.colour[0].value;
                 }
+                if (typeof data.entities['number'] !== 'undefined') {
+                    session.dialogData.search.price = data.entities.number[0].value;
+                    if (typeof data.entities['quantifier'] !== 'undefined') {
+                        session.dialogData.search.quantifier = data.entities.quantifier[0].value;
+                    }
+                }
             }
         }
         session.beginDialog('/ensureSearchEntities', session.dialogData.search);
     },
     function (session, results) {
         session.dialogData.search = results.response;
-        if (session.dialogData.search.gender && session.dialogData.search.category && session.dialogData.search.colour) {
+        if (session.dialogData.search.gender && session.dialogData.search.category && session.dialogData.search.colour && session.dialogData.search.price) {
             session.sendTyping();
             product.find(session.dialogData.search, function (products) {
                 if (products !== null) {
@@ -390,9 +403,9 @@ bot.dialog('/ensureSearchEntities', [
         function checkColour() {
             if (!session.dialogData.search.colour) {
                 if (session.dialogData.search.category == 'jeans') {
-                    builder.Prompts.text(session, "What wash were you thinking? e.g. light/medium/dark/white/acid washed. Or enter your own.");
+                    builder.Prompts.text(session, "What wash were you thinking? e.g. light/medium/dark/white/acid washed");
                 } else {
-                    builder.Prompts.text(session, "What colour were you thinking? e.g. black/silver/orange/multi-color/beige. Or enter your own.");
+                    builder.Prompts.text(session, "What colour were you thinking? e.g. black/silver/orange/multi-color/beige");
                 }
             } else {
                 next();
@@ -413,14 +426,37 @@ bot.dialog('/ensureSearchEntities', [
         }
 
     },
-    function (session, results) {
+    function (session, results, next) {
         session.sendTyping();
+        function checkPrice() {
+            if (!session.dialogData.search.price) {
+                    builder.Prompts.text(session, "At about what price? e.g. around 20, under 100");
+            } else {
+                next();
+            }
+        }
         if (results.response) {
-            session.dialogData.search.colour = results.response.entity;
             getWitAnalysis(session, dialogHandler);
             function dialogHandler(data) {
                 if (data.entities.colour != null) {
                     session.dialogData.search.colour = data.entities.colour[0].value;
+                    checkPrice();
+                } else {
+                    session.replaceDialog("/");
+                }
+            }
+        } else {
+            checkPrice();
+        }
+
+    },
+    function (session, results) {
+        session.sendTyping();
+        if (results.response) {
+            getWitAnalysis(session, dialogHandler);
+            function dialogHandler(data) {
+                if (data.entities.number != null) {
+                    session.dialogData.search.price = data.entities.number[0].value;
                     session.endDialogWithResult({ response: session.dialogData.search });
                 } else {
                     session.replaceDialog("/");
@@ -470,13 +506,14 @@ bot.beginDialogAction('style profile', '/styleProfile', { matches: /^style profi
 bot.dialog('/styleProfile', [
     function (session) {
         session.sendTyping();
+        session.send("Say \"cancel\" at any time to quit the style profile.")
         session.dialogData.search = {};
         builder.Prompts.choice(session, "Are you a man or a woman?", emoji.emojify("man :man:|woman :woman:"));
     },
     function (session, results) {
         session.sendTyping();
         session.dialogData.search.gender = results.response.entity;
-        builder.Prompts.choice(session, "What's your favourite colour? Or type your own.", "Black|Silver|Orange|Multi-Color|Beige");
+        builder.Prompts.choice(session, "What's your preferred colour?", "Black|Silver|Orange|Multi-Color|Beige");
     },
     function (session, results) {
         session.sendTyping();
@@ -512,7 +549,7 @@ bot.dialog('/styleProfile', [
     function (session, results) {
         session.sendTyping();
         session.dialogData.search.swim = results.response.entity;
-        session.send(emoji.emojify("Apologies, this isn't fully functional yet :flushed:"));
+        session.send(emoji.emojify("Apologies, this isn't fully functional yet :flushed: But I enjoyed hearing your tastes!"));
         session.endDialog();
         //session.beginDialog('/displayCarousel', { response: session.dialogData.search });
     }
@@ -572,11 +609,18 @@ bot.dialog('/reset', function (session) {
     session.clearDialogStack();
 });
 
+bot.beginDialogAction('cancel', '/cancel', { matches: /^cancel/i });
+bot.dialog('/cancel', function (session) {
+    session.send(getAttachment.getGreetingAttachment(session, emoji.emojify("Action cancelled. What else can I help you with? :thinking_face:")));
+    session.userData = null;
+    session.clearDialogStack();
+});
+
 bot.beginDialogAction('help', '/help', { matches: /^help/i });
 bot.dialog('/help', function (session) {
     var reply = "I'm NLPurchase, you can talk to me to help you find items that are perfect for you or as a gift!" +
-        " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink!\")" +
-        " and I'll handle the rest. Or select one of the buttons below to try out a more guided experience.";
+        " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink\")" +
+        " and I'll help you out. Use the menu in the bottom left hand corner to get around, or select one of the buttons below to try out a more guided experience.";
     session.send(getAttachment.getGreetingAttachment(session, reply));
     session.endDialog();
 });

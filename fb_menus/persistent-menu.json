@@ -25,7 +25,7 @@
     {
       "type":"postback",
       "title":"Give feedback",
-      "payload":"style profile"
+      "payload":"I want to leave feedback"
     }
   ]
 }

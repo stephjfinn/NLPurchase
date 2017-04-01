@@ -17,7 +17,7 @@ exports.getFeedbackAttachment = function (session, text) {
     var card = new builder.HeroCard(session)
         .text(text)
         .buttons([
-            builder.CardAction.openUrl(session, 'PUT URL TO SURVEY HERE', emoji.emojify('Give Feedback :memo:'))
+            builder.CardAction.openUrl(session, 'https://goo.gl/forms/NyboP9fu8pBXbesf2', emoji.emojify('Give Feedback :memo:'))
         ]);
     var msg = new builder.Message(session).attachments([card]);
     return msg;
@@ -73,8 +73,8 @@ exports.getCardsAttachments = function (session, products) {
                 builder.CardImage.create(session, products[i].pictureURL)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy'),
-                builder.CardAction.postBack(session, 'build', 'Build an outfit'),
+                builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy now'),
+                //builder.CardAction.postBack(session, 'build', 'Build an outfit'),
                 builder.CardAction.postBack(session, 'add favourites product_id ' + products[i]._id, emoji.emojify(':heart:'))
             ])
         cards.push(newcard)
@@ -132,7 +132,7 @@ exports.getFavouriteCardsAttachments = function (session, products) {
                 builder.CardImage.create(session, products[i].pictureURL)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy'),
+                builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy now'),
                 builder.CardAction.postBack(session, 'build', 'Build an outfit'),
                 builder.CardAction.postBack(session, 'remove favourites product_id ' + products[i]._id, emoji.emojify('Remove :broken_heart:'))
             ])

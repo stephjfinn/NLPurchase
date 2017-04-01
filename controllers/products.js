@@ -49,6 +49,19 @@ function queryBuilder(queryData) {
     if (queryData.colour) {
         query.colour = queryData.colour;
     }
+    if (queryData.price) {
+        if (queryData.quantifier) {
+            if (queryData.quantifier == 'under') {
+                query.price = {'$lt': queryData.price}
+            } else {
+                query.price = {'$gt': queryData.price}
+            }
+        } else {
+            var less_than = queryData.price + 10;
+            var greater_than = queryData.price - 10;
+            query.price = {'$gt': greater_than, '$lt': less_than}
+        }
+    }
     return query;
 }
 
