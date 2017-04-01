@@ -1,5 +1,5 @@
 //REQUIRES
-require('dotenv').config({ path: './keys.env' })
+//require('dotenv').config({ path: './keys.env' })
 var db = require('./db');
 var product = require('./controllers/products');
 var transaction = require('./controllers/transactions');
@@ -18,7 +18,7 @@ var wit = require('./wit');
 var client = wit.client();
 
 //BOOLEANS
-var fbMenusReset = true;
+var fbMenusReset = false;
 var dropCollection = false;
 var doInserts = false;
 
@@ -123,6 +123,19 @@ function getQueryVariable(query, variable) {
     return null;
 }
 
+function getWitAnalysis(session, handleDialog) {
+    if (session.message.text != "") {
+        client.message(session.message.text, {})
+            .then((data) => {
+                handleDialog(data);
+            }).catch(console.error);
+    } else {
+        var reply = "I hope that's a good thing! :smile:";
+        reply = emoji.emojify(reply);
+        session.send(reply);
+    }
+}
+
 // Install logging middleware
 bot.use({
     botbuilder: function (session, next) {
@@ -145,132 +158,131 @@ bot.use({
 
 bot.dialog('/', function (session) {
     session.sendTyping();
-    if (session.message.text != "") {
-        client.message(session.message.text, {})
-            .then((data) => {
-                if (data.entities.intent != null) {
-                    switch (data.entities.intent[0].value) {
-                        case "greeting":
-                            session.userData = null;
-                            session.clearDialogStack();
-                            var reply = getGreeting(session);
-                            session.send(reply);
-                            break;
-                        case "search":
-                            session.beginDialog('/search', data);
-                            break;
-                        case "identity":
-                            var reply = "I am NLPurchase, your free shopping assistant! :smiley: " +
-                                "I live on the internet in order to personally aid your fashion needs. " +
-                                "Give me your colours, patterns, events, and I will help you fill your perfect custom wardrobe :ok_hand:";
-                            session.send(reply);
-                            break;
-                        case "joke":
-                            var jokes = ["I only have two complaints in life: not enough closet space and nothing to wear.",
-                                "A husband calls his programmer wife and tells her, \"While you're out, buy some milk.\" "
-                                + "She never returns.",
-                                "A SQL query goes into a bar, walks up to two tables and asks, \"Can I join you?\"",
-                                "If at first you don’t succeed; call it version 1.0."];
-                            session.send(jokes);
-                            break;
-                        case "restart":
-                            var reply = "No problem, let's start fresh."
-                            session.send(reply);
-                            reply = getGreeting(session);
-                            session.send(reply);
-                            break;
-                        case "inspiration":
-                            if (data.entities.keyword != null) {
-                                session.beginDialog('/displayTrendCarousel', data.entities.keyword[0].value);
-                            } else {
-                                session.beginDialog('/inspiration');
-                            }
-                            break;
-                        case "help":
-                            session.beginDialog('/help');
-                            break;
-                        case "formality":
-                            var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("My power levels are :100: and I'm ready to shop :muscle: Let's get started!"))
-                            session.send(reply);
-                            break;
-                        case "thanks":
-                            session.send("No problem, " + getFirstName(session.message.user.name) + "!" | emoji.emojify("Glad I could help! :blush:") | emoji.emojify("You are very welcome! :grinning:"));
-                            break;
-                        case "favourites":
-                            if (data.entities.trigger != null && data.entities.add_or_remove != null) {
-                                //check if "add" or "remove"
-                                session.sendTyping();
-                                if (data.entities.add_or_remove[0].value == 'add') {
-                                    var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
-                                    favourite.insert(favouriteData, function (favourites) {
-                                        console.log("Inserted 1 favourite");
-                                        session.send(emoji.emojify("Item added to your favourites! :ok_hand:"));
-                                    })
-                                } else if (data.entities.add_or_remove[0].value == 'remove') {
-                                    var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
-                                    favourite.delete(favouriteData, function (favourites) {
-                                        console.log("Deleted 1 favourite");
-                                        session.send(emoji.emojify("Item has been removed from your favourites."));
-                                    })
-                                }
-                            } else {
-                                session.beginDialog('/favourites');
-                            }
-                            break;
-                        case "transactions":
-                            var queryData = { 'userId': session.message.address.user.id }
-                            transaction.find(queryData, function (transactions) {
-                                if (transactions !== null) {
-                                    session.sendTyping();
-                                    var productIds = [];
-                                    function getTransactionId(i) {
-                                        if (i < transactions.length) {
-                                            productIds.push(transactions[i].productId);
-                                            getTransactionId(i + 1);
-                                        } else {
-                                            product.findByProductIdArray(productIds, function (products) {
-                                                var sendReply = function (reply) {
-                                                    session.send(emoji.emojify("Here are the items you've bought so far: :heart_eyes:"));
-                                                    setTimeout(function () {
-                                                        session.send(reply);
-                                                    }, 500);
-                                                }
-                                                var getReply = function (cards, callback) {
-                                                    var reply = new builder.Message(session)
-                                                        .attachmentLayout(builder.AttachmentLayout.carousel)
-                                                        .attachments(cards);
-                                                    callback(reply);
-                                                }
-                                                var getCards = function (callback) {
-                                                    var cards = getAttachment.getCardsAttachments(session, products);
-                                                    callback(cards, sendReply);
-                                                };
-                                                getCards(getReply);
-                                            })
-                                        }
-                                    }
-                                    getTransactionId(0);
-                                } else {
-                                    session.send(emoji.emojify("You haven't bought anything... yet! :blush:"));
-                                }
-                            })
-                            break;
-                        case "insult":
-                            var reply = "I'm still learning, please be constructive with your criticism! If you'd like to give feedback about me to my human overlord, please press the button below.";
-                            session.send(getAttachment.getFeedbackAttachment(session, reply));
+    getWitAnalysis(session, dialogHandler);
+    function dialogHandler(data) {
+        if (data.entities.intent != null) {
+            switch (data.entities.intent[0].value) {
+                case "greeting":
+                    session.userData = null;
+                    session.clearDialogStack();
+                    var reply = getGreeting(session);
+                    session.send(reply);
+                    break;
+                case "search":
+                    session.beginDialog('/search', data);
+                    break;
+                case "identity":
+                    var reply = "I am NLPurchase, your free shopping assistant! :smiley: " +
+                        "I live on the internet in order to personally aid your fashion needs. " +
+                        "Give me your colours, patterns, events, and I will help you fill your perfect custom wardrobe :ok_hand:";
+                    session.send(reply);
+                    break;
+                case "joke":
+                    var jokes = ["I only have two complaints in life: not enough closet space and nothing to wear.",
+                        "A husband calls his programmer wife and tells her, \"While you're out, buy some milk.\" "
+                        + "She never returns.",
+                        "A SQL query goes into a bar, walks up to two tables and asks, \"Can I join you?\"",
+                        "If at first you don’t succeed; call it version 1.0."];
+                    session.send(jokes);
+                    break;
+                case "restart":
+                    var reply = "No problem, let's start fresh."
+                    session.send(reply);
+                    reply = getGreeting(session);
+                    session.send(reply);
+                    break;
+                case "inspiration":
+                    if (data.entities.keyword != null) {
+                        session.beginDialog('/displayTrendCarousel', data.entities.keyword[0].value);
+                    } else {
+                        session.beginDialog('/inspiration');
                     }
-                } else {
+                    break;
+                case "help":
+                    session.beginDialog('/help');
+                    break;
+                case "formality":
+                    var reply = getAttachment.getGreetingAttachment(session, emoji.emojify("My power levels are :100: and I'm ready to shop :muscle: Let's get started!"))
+                    session.send(reply);
+                    break;
+                case "thanks":
+                    session.send("No problem, " + getFirstName(session.message.user.name) + "!" | emoji.emojify("Glad I could help! :blush:") | emoji.emojify("You are very welcome! :grinning:"));
+                    break;
+                case "favourites":
+                    if (data.entities.trigger != null && data.entities.add_or_remove != null) {
+                        //check if "add" or "remove"
+                        session.sendTyping();
+                        if (data.entities.add_or_remove[0].value == 'add') {
+                            var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
+                            favourite.insert(favouriteData, function (favourites) {
+                                console.log("Inserted 1 favourite");
+                                session.send(emoji.emojify("Item added to your favourites! :ok_hand:"));
+                            })
+                        } else if (data.entities.add_or_remove[0].value == 'remove') {
+                            var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
+                            favourite.delete(favouriteData, function (favourites) {
+                                console.log("Deleted 1 favourite");
+                                session.send(emoji.emojify("Item has been removed from your favourites."));
+                            })
+                        }
+                    } else {
+                        session.beginDialog('/favourites');
+                    }
+                    break;
+                case "transactions":
+                    var queryData = { 'userId': session.message.address.user.id }
+                    transaction.find(queryData, function (transactions) {
+                        if (transactions !== null) {
+                            session.sendTyping();
+                            var productIds = [];
+                            function getTransactionId(i) {
+                                if (i < transactions.length) {
+                                    productIds.push(transactions[i].productId);
+                                    getTransactionId(i + 1);
+                                } else {
+                                    product.findByProductIdArray(productIds, function (products) {
+                                        var sendReply = function (reply) {
+                                            session.send(emoji.emojify("Here are the items you've bought so far: :heart_eyes:"));
+                                            setTimeout(function () {
+                                                session.send(reply);
+                                            }, 500);
+                                        }
+                                        var getReply = function (cards, callback) {
+                                            var reply = new builder.Message(session)
+                                                .attachmentLayout(builder.AttachmentLayout.carousel)
+                                                .attachments(cards);
+                                            callback(reply);
+                                        }
+                                        var getCards = function (callback) {
+                                            var cards = getAttachment.getCardsAttachments(session, products);
+                                            callback(cards, sendReply);
+                                        };
+                                        getCards(getReply);
+                                    })
+                                }
+                            }
+                            getTransactionId(0);
+                        } else {
+                            session.send(emoji.emojify("You haven't bought anything... yet! :blush:"));
+                        }
+                    })
+                    break;
+                case "insult":
+                    var reply = "I'm still learning, please be constructive with your criticism! If you'd like to give feedback about me to my human overlord, please press the button below.";
+                    session.send(getAttachment.getFeedbackAttachment(session, reply));
+                    break;
+                default:
                     var reply = ["I'm sorry, could you say that again?",
                         "I don't quite get what you mean by that, could you repeat it?",
                         "Can you say that again for me please?"]
                     session.send(reply);
-                }
-            })
-            .catch(console.error);
-    } else {
-        var reply = "I hope that's a good thing! :smile:";
-        reply = emoji.emojify(reply);
-        session.send(reply);
+            }
+        } else {
+            var reply = ["I'm sorry, could you say that again?",
+                "I don't quite get what you mean by that, could you repeat it?",
+                "Can you say that again for me please?"]
+            session.send(reply);
+        }
     }
 });
 
@@ -329,7 +341,7 @@ bot.dialog('/ensureSearchEntities', [
         session.sendTyping();
         session.dialogData.search = args || {};
         if (!session.dialogData.search.gender) {
-            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", "man|woman");
+            builder.Prompts.text(session, "Are we shopping for a man or a woman?");
         } else {
             next();
         }
@@ -337,19 +349,26 @@ bot.dialog('/ensureSearchEntities', [
     function (session, results, next) {
         session.sendTyping();
         if (results.response) {
-            session.dialogData.search.gender = results.response.entity;
+            getWitAnalysis(session, dialogHandler);
+            function dialogHandler(data) {
+                if (data.entities.gender != null) {
+                    session.dialogData.search.gender = data.entities.gender[0].value;
+                } else {
+                    session.replaceDialog("/inspiration");
+                }
+            }
         }
         if (!session.dialogData.search.category) {
             if (session.dialogData.search.gender == "woman") {
                 /*var options = ["dresses", "jeans", "skirts", "hoodies"];
                 session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
                 session.beginDialog('/category');*/
-                builder.Prompts.choice(session, "In which category? Feel free to type your own.", "dresses|jeans|skirts|hoodies");
+                builder.Prompts.text(session, "In which category? e.g. dresses/jeans/skirts/hoodies. Feel free to type your own.");
             } else {
                 /*var options = ["coats", "pants", "sweaters", "casual shirts"];
                 session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
                 session.beginDialog('/category');*/
-                builder.Prompts.choice(session, "In which category? Feel free to type your own.", "coats|pants|sweaters|casual shirts");
+                builder.Prompts.text(session, "In which category? e.g. coats/pants/sweaters/shirts. Feel free to type your own.");
             }
         } else {
             next();
@@ -358,10 +377,21 @@ bot.dialog('/ensureSearchEntities', [
     function (session, results, next) {
         session.sendTyping();
         if (results.response) {
-            session.dialogData.search.category = results.response.entity;
+            getWitAnalysis(session, dialogHandler);
+            function dialogHandler(data) {
+                if (data.entities.gender != null) {
+                    session.dialogData.search.category = data.entities.category[0].value;
+                } else {
+                    session.replaceDialog("/");
+                }
+            }
         }
         if (!session.dialogData.search.colour) {
-            builder.Prompts.choice(session, "What colour were you thinking? Or enter your own below.", "Black|Silver|Orange|Multi-Color|Beige");
+            if (session.dialogData.search.category == 'jeans') {
+                builder.Prompts.text(session, "What wash were you thinking? e.g. light/medium/dark/white/acid washed. Or enter your own.");
+            } else {
+                builder.Prompts.text(session, "What colour were you thinking? e.g. black/silver/orange/multi-color/beige. Or enter your own.");
+            }
         } else {
             next();
         }
@@ -370,6 +400,14 @@ bot.dialog('/ensureSearchEntities', [
         session.sendTyping();
         if (results.response) {
             session.dialogData.search.colour = results.response.entity;
+            getWitAnalysis(session, dialogHandler);
+            function dialogHandler(data) {
+                if (data.entities.colour != null) {
+                    session.dialogData.search.colour = data.entities.colour[0].value;
+                } else {
+                    session.replaceDialog("/");
+                }
+            }
         }
         session.endDialogWithResult({ response: session.dialogData.search });
     }
