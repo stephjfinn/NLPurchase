@@ -76,8 +76,8 @@ if (doInserts == true) {
 
 //BOT SETUP: INITIALISE CHATBOT
 var connector = new builder.ChatConnector({
-    appId: process.env.BOT_APP_ID,
-    appPassword: process.env.BOT_APP_PASSWORD
+    appId: process.env.BOTFRAMEWORK_APPID,
+    appPassword: process.env.BOTFRAMEWORK_APPSECRET
 });
 var bot = new builder.UniversalBot(connector);
 server.get(/.*/, restify.serveStatic({
