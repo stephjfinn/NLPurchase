@@ -1,5 +1,5 @@
 var mongoose = require('mongoose');
-var uri = process.env.MONGOOSE_LOCAL_URI;
+var uri = process.env.MONGOOSE_URI;
 
 function connect() {
   mongoose.connect(uri)

@@ -1,6 +1,6 @@
 //REQUIRES
 //require('dotenv').config({ path: './keys.env' })
-/*var db = require('./db');
+var db = require('./db');
 var product = require('./controllers/products');
 var transaction = require('./controllers/transactions');
 var favourite = require('./controllers/favourites');
@@ -80,7 +80,7 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.BOTFRAMEWORK_APPSECRET
 });
 var bot = new builder.UniversalBot(connector);
-server.get(/.*//*, restify.serveStatic({
+server.get(/.*/, restify.serveStatic({
 	'directory': '.',
 	'default': 'index.html'
 }));
@@ -644,52 +644,3 @@ function getGreeting(session) {
     var attachmentMsg = "Choose from the options below or try a sentence (e.g. \"I'm looking for a blue dress to wear to work for around $30\")";
     return getAttachment.getGreetingAttachment(session, attachmentMsg);
 }
-
-/*bot.dialog('/category',
-    function (session) {
-        client.message(session.message.text, {})
-            .then((data) => {
-                if (data.entities != null) {
-                    if (data.entities.category != null) {
-                        var category = category[0];
-                        session.endDialogWithResult(category);
-                    } else session.endDialogWithResult(null);
-                }
-            })
-    }
-);*/
-
-var restify = require('restify');
-var builder = require('botbuilder');
-
-// Get secrets from server environment
-var botConnectorOptions = { 
-    appId: process.env.BOTFRAMEWORK_APPID, 
-    appPassword: process.env.BOTFRAMEWORK_APPSECRET
-};
-
-// Create bot
-var connector = new builder.ChatConnector(botConnectorOptions);
-var bot = new builder.UniversalBot(connector);
-
-bot.dialog('/', function (session) {
-    
-    //respond with user's message
-    session.send("You said " + session.message.text);
-});
-
-// Setup Restify Server
-var server = restify.createServer();
-
-// Handle Bot Framework messages
-server.post('/api/messages', connector.listen());
-
-// Serve a static web page
-server.get(/.*/, restify.serveStatic({
-	'directory': '.',
-	'default': 'index.html'
-}));
-
-server.listen(process.env.port || 3978, function () {
-    console.log('%s listening to %s', server.name, server.url); 
-});
