@@ -1,5 +1,5 @@
 //REQUIRES
-//require('dotenv').config({ path: './keys.env' })
+require('dotenv').config({ path: './keys.env' })
 var db = require('./db');
 var product = require('./controllers/products');
 var transaction = require('./controllers/transactions');
@@ -81,8 +81,8 @@ var connector = new builder.ChatConnector({
 });
 var bot = new builder.UniversalBot(connector);
 server.get(/.*/, restify.serveStatic({
-	'directory': '.',
-	'default': 'index.html'
+    'directory': '.',
+    'default': 'index.html'
 }));
 //listen for incoming messages
 server.post('/api/messages', connector.listen());
@@ -311,33 +311,37 @@ bot.dialog('/search', [
         session.beginDialog('/ensureSearchEntities', session.dialogData.search);
     },
     function (session, results) {
-        session.sendTyping();
         session.dialogData.search = results.response;
-        product.find(session.dialogData.search, function (products) {
-            if (products !== null) {
-                var sendReply = function (reply) {
-                    session.send(emoji.emojify("How 'bout these? :grin:"));
-                    setTimeout(function () {
-                        session.send(reply);
-                    }, 500);
+        if (session.dialogData.search.gender && session.dialogData.search.category && session.dialogData.search.colour) {
+            session.sendTyping();
+            product.find(session.dialogData.search, function (products) {
+                if (products !== null) {
+                    var sendReply = function (reply) {
+                        session.send(emoji.emojify("How 'bout these? :grin:"));
+                        setTimeout(function () {
+                            session.send(reply);
+                        }, 500);
+                        session.endDialog();
+                    }
+                    var getReply = function (cards, callback) {
+                        var reply = new builder.Message(session)
+                            .attachmentLayout(builder.AttachmentLayout.carousel)
+                            .attachments(cards);
+                        callback(reply);
+                    }
+                    var getCards = function (callback) {
+                        var cards = getAttachment.getCardsAttachments(session, products);
+                        callback(cards, sendReply);
+                    };
+                    getCards(getReply);
+                } else {
+                    session.send(emoji.emojify("I'm sorry, we have no items matching those criteria :slightly_frowning_face:"));
                     session.endDialog();
                 }
-                var getReply = function (cards, callback) {
-                    var reply = new builder.Message(session)
-                        .attachmentLayout(builder.AttachmentLayout.carousel)
-                        .attachments(cards);
-                    callback(reply);
-                }
-                var getCards = function (callback) {
-                    var cards = getAttachment.getCardsAttachments(session, products);
-                    callback(cards, sendReply);
-                };
-                getCards(getReply);
-            } else {
-                session.send(emoji.emojify("I'm sorry, we have no items matching those criteria :slightly_frowning_face:"));
-                session.endDialog();
-            }
-        })
+            })
+        } else {
+            session.endDialog();
+        }
     }
 ]);
 bot.dialog('/ensureSearchEntities', [
@@ -352,51 +356,62 @@ bot.dialog('/ensureSearchEntities', [
     },
     function (session, results, next) {
         session.sendTyping();
+        function checkCategory() {
+            if (!session.dialogData.search.category) {
+                if (session.dialogData.search.gender == "woman") {
+                    //var options = ["dresses", "jeans", "skirts", "hoodies"];
+                    //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
+                    builder.Prompts.text(session, "In which category? e.g. dresses/jeans/skirts/hoodies. Feel free to type your own.");
+                } else {
+                    //var options = ["coats", "pants", "sweaters", "casual shirts"];
+                    //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
+                    builder.Prompts.text(session, "In which category? e.g. coats/pants/sweaters/shirts. Feel free to type your own.");
+                }
+            } else {
+                next();
+            }
+        }
         if (results.response) {
             getWitAnalysis(session, dialogHandler);
             function dialogHandler(data) {
                 if (data.entities.gender != null) {
                     session.dialogData.search.gender = data.entities.gender[0].value;
+                    checkCategory();
                 } else {
-                    session.replaceDialog("/inspiration");
+                    session.replaceDialog("/");
                 }
             }
-        }
-        if (!session.dialogData.search.category) {
-            if (session.dialogData.search.gender == "woman") {
-                //var options = ["dresses", "jeans", "skirts", "hoodies"];
-                //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
-                builder.Prompts.text(session, "In which category? e.g. dresses/jeans/skirts/hoodies. Feel free to type your own.");
-            } else {
-                //var options = ["coats", "pants", "sweaters", "casual shirts"];
-                //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
-                builder.Prompts.text(session, "In which category? e.g. coats/pants/sweaters/shirts. Feel free to type your own.");
-            }
         } else {
-            next();
+            checkCategory();
         }
     },
     function (session, results, next) {
         session.sendTyping();
+        function checkColour() {
+            if (!session.dialogData.search.colour) {
+                if (session.dialogData.search.category == 'jeans') {
+                    builder.Prompts.text(session, "What wash were you thinking? e.g. light/medium/dark/white/acid washed. Or enter your own.");
+                } else {
+                    builder.Prompts.text(session, "What colour were you thinking? e.g. black/silver/orange/multi-color/beige. Or enter your own.");
+                }
+            } else {
+                next();
+            }
+        }
         if (results.response) {
             getWitAnalysis(session, dialogHandler);
             function dialogHandler(data) {
-                if (data.entities.gender != null) {
+                if (data.entities.category != null) {
                     session.dialogData.search.category = data.entities.category[0].value;
+                    checkColour();
                 } else {
-                    session.replaceDialog("/inspiration");
+                    session.replaceDialog("/");
                 }
             }
-        }
-        if (!session.dialogData.search.colour) {
-            if (session.dialogData.search.category == 'jeans') {
-                builder.Prompts.text(session, "What wash were you thinking? e.g. light/medium/dark/white/acid washed. Or enter your own.");
-            } else {
-                builder.Prompts.text(session, "What colour were you thinking? e.g. black/silver/orange/multi-color/beige. Or enter your own.");
-            }
         } else {
-            next();
+            checkColour();
         }
+
     },
     function (session, results) {
         session.sendTyping();
@@ -406,12 +421,14 @@ bot.dialog('/ensureSearchEntities', [
             function dialogHandler(data) {
                 if (data.entities.colour != null) {
                     session.dialogData.search.colour = data.entities.colour[0].value;
+                    session.endDialogWithResult({ response: session.dialogData.search });
                 } else {
                     session.replaceDialog("/");
                 }
             }
+        } else {
+            session.endDialogWithResult({ response: session.dialogData.search });
         }
-        session.endDialogWithResult({ response: session.dialogData.search });
     }
 ]);
 
