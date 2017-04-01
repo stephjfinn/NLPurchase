@@ -80,6 +80,10 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.BOT_APP_PASSWORD
 });
 var bot = new builder.UniversalBot(connector);
+server.get(/.*/, restify.serveStatic({
+	'directory': '.',
+	'default': 'index.html'
+}));
 //listen for incoming messages
 server.post('/api/messages', connector.listen());
 //callbacks exposed for the business website to call on completion/failure of purchase
