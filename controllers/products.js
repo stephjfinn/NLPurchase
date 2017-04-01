@@ -52,6 +52,21 @@ function queryBuilder(queryData) {
     return query;
 }
 
+exports.findByProductIdArray = function (productIdArray, callback) {
+    Product.find({'_id': { $in: productIdArray}}, function (err, products) {
+        if (err) {
+            console.log(err);
+            callback(null);
+        } else if (products.length <= 0) {
+            console.log('No products found');
+            callback(null);
+        } else {
+            console.log('Products found: ' + products);
+            callback(products);
+        }
+    });
+};
+
 exports.insert = function (item, callback) {
     Product.create({
         gender: item.gender,

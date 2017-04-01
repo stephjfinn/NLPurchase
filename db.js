@@ -34,3 +34,4 @@ process.on('SIGINT', function () {
 // BRING IN YOUR SCHEMAS & MODELS // For example 
 require('./model/product');
 require('./model/transaction');
+require('./model/favourite');

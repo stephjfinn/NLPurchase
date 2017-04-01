@@ -3,6 +3,7 @@ require('dotenv').config({ path: './keys.env' })
 var db = require('./db');
 var product = require('./controllers/products');
 var transaction = require('./controllers/transactions');
+var favourite = require('./controllers/favourites');
 var restify = require('restify');
 var builder = require('botbuilder');
 var categoryKeys = require('./categoryKeys');
@@ -17,7 +18,7 @@ var wit = require('./wit');
 var client = wit.client();
 
 //BOOLEANS
-var fbMenusReset = false;
+var fbMenusReset = true;
 var dropCollection = false;
 var doInserts = false;
 
@@ -87,8 +88,8 @@ server.get('/api/callbackOk', function (req, res, next) {
     if (query) {
         var userId = getQueryVariable(query, 'userId');
         var productId = getQueryVariable(query, 'productId');
-        var transactionData = {'userId': userId, 'productId': productId};
-        transaction.insert(transactionData, function (transactions){
+        var transactionData = { 'userId': userId, 'productId': productId };
+        transaction.insert(transactionData, function (transactions) {
             console.log("Inserted 1 transaction");
             sendTextMessage(userId, emoji.emojify("Thank you! Your super cool purchase is complete and on its way to your wardrobe :grin:"));
             res.status(200);
@@ -179,8 +180,8 @@ bot.dialog('/', function (session) {
                             session.send(reply);
                             break;
                         case "inspiration":
-                            if (data.entities.keyword[0] != null) {
-                                session.beginDialog('/displayCarousel', data.entities.keyword[0].value);
+                            if (data.entities.keyword != null) {
+                                session.beginDialog('/displayTrendCarousel', data.entities.keyword[0].value);
                             } else {
                                 session.beginDialog('/inspiration');
                             }
@@ -196,14 +197,67 @@ bot.dialog('/', function (session) {
                             session.send("No problem, " + getFirstName(session.message.user.name) + "!" | emoji.emojify("Glad I could help! :blush:") | emoji.emojify("You are very welcome! :grinning:"));
                             break;
                         case "favourites":
-                            if (data.entities.trigger[0] != null && data.entities.add_or_remove[0] != null) {
+                            if (data.entities.trigger != null && data.entities.add_or_remove != null) {
                                 //check if "add" or "remove"
-                                //get product ID from end of sentence and do functionality of adding or removing favourites
-                                session.send(emoji.emoji("Product was added to your favourites! :thumbsup:"));
+                                session.sendTyping();
+                                if (data.entities.add_or_remove[0].value == 'add') {
+                                    var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
+                                    favourite.insert(favouriteData, function (favourites) {
+                                        console.log("Inserted 1 favourite");
+                                        session.send(emoji.emojify("Item added to your favourites! :ok_hand:"));
+                                    })
+                                } else if (data.entities.add_or_remove[0].value == 'remove') {
+                                    var favouriteData = { 'userId': session.message.address.user.id, 'productId': session.message.text.substring(session.message.text.lastIndexOf(" ") + 1) };
+                                    favourite.delete(favouriteData, function (favourites) {
+                                        console.log("Deleted 1 favourite");
+                                        session.send(emoji.emojify("Item has been removed from your favourites."));
+                                    })
+                                }
                             } else {
                                 session.beginDialog('/favourites');
                             }
                             break;
+                        case "transactions":
+                            var queryData = { 'userId': session.message.address.user.id }
+                            transaction.find(queryData, function (transactions) {
+                                if (transactions !== null) {
+                                    session.sendTyping();
+                                    var productIds = [];
+                                    function getTransactionId(i) {
+                                        if (i < transactions.length) {
+                                            productIds.push(transactions[i].productId);
+                                            getTransactionId(i + 1);
+                                        } else {
+                                            product.findByProductIdArray(productIds, function (products) {
+                                                var sendReply = function (reply) {
+                                                    session.send(emoji.emojify("Here are the items you've bought so far: :heart_eyes:"));
+                                                    setTimeout(function () {
+                                                        session.send(reply);
+                                                    }, 500);
+                                                }
+                                                var getReply = function (cards, callback) {
+                                                    var reply = new builder.Message(session)
+                                                        .attachmentLayout(builder.AttachmentLayout.carousel)
+                                                        .attachments(cards);
+                                                    callback(reply);
+                                                }
+                                                var getCards = function (callback) {
+                                                    var cards = getAttachment.getCardsAttachments(session, products);
+                                                    callback(cards, sendReply);
+                                                };
+                                                getCards(getReply);
+                                            })
+                                        }
+                                    }
+                                    getTransactionId(0);
+                                } else {
+                                    session.send(emoji.emojify("You haven't bought anything... yet! :blush:"));
+                                }
+                            })
+                            break;
+                        case "insult":
+                            var reply = "I'm still learning, please be constructive with your criticism! If you'd like to give feedback about me to my human overlord, please press the button below.";
+                            session.send(getAttachment.getFeedbackAttachment(session, reply));
                     }
                 } else {
                     var reply = ["I'm sorry, could you say that again?",
@@ -214,7 +268,7 @@ bot.dialog('/', function (session) {
             })
             .catch(console.error);
     } else {
-        var reply = "I hope that means you like it! :smile:";
+        var reply = "I hope that's a good thing! :smile:";
         reply = emoji.emojify(reply);
         session.send(reply);
     }
@@ -407,7 +461,7 @@ bot.dialog('/styleProfile', [
     }
 ]);
 
-bot.dialog('/displayCarousel', [
+bot.dialog('/displayTrendCarousel', [
     function (session, keyword, next) {
         session.sendTyping();
         session.dialogData.keyword = keyword;
@@ -472,11 +526,44 @@ bot.dialog('/help', function (session) {
 
 bot.beginDialogAction('favourites', '/favourites', { matches: /^favourites/i });
 bot.dialog('/favourites', function (session) {
-    session.send("Here are your favourites, " + getFirstName(session.message.user.name) + "!");
-    //add functionality for displaying favourites carousel
-    //get products id from user data
-    //select from database on product id
-    //load carousel with products
+    session.sendTyping();
+    var queryData = { 'userId': session.message.address.user.id }
+    favourite.find(queryData, function (favourites) {
+        if (favourites !== null) {
+            var productIds = [];
+            function getFavouriteId(i) {
+                if (i < favourites.length) {
+                    productIds.push(favourites[i].productId);
+                    getFavouriteId(i + 1);
+                } else {
+                    product.findByProductIdArray(productIds, function (products) {
+                        var sendReply = function (reply) {
+                            session.send(emoji.emojify("Here are your favourites, " + getFirstName(session.message.user.name) + "! :open_hands:"));
+                            setTimeout(function () {
+                                session.send(reply);
+                            }, 500);
+                            session.endDialog();
+                        }
+                        var getReply = function (cards, callback) {
+                            var reply = new builder.Message(session)
+                                .attachmentLayout(builder.AttachmentLayout.carousel)
+                                .attachments(cards);
+                            callback(reply);
+                        }
+                        var getCards = function (callback) {
+                            var cards = getAttachment.getFavouriteCardsAttachments(session, products);
+                            callback(cards, sendReply);
+                        };
+                        getCards(getReply);
+                    })
+                }
+            }
+            getFavouriteId(0);
+        } else {
+            session.send(emoji.emojify("You haven't favourited anything... yet! :blush:"));
+            session.endDialog();
+        }
+    })
     session.endDialog();
 });
 

@@ -13,6 +13,16 @@ exports.getGreetingAttachment = function (session, greeting) {
     return msg;
 };
 
+exports.getFeedbackAttachment = function (session, text) {
+    var card = new builder.HeroCard(session)
+        .text(text)
+        .buttons([
+            builder.CardAction.openUrl(session, 'PUT URL TO SURVEY HERE', emoji.emojify('Give Feedback :memo:'))
+        ]);
+    var msg = new builder.Message(session).attachments([card]);
+    return msg;
+};
+
 exports.getCardsAttachments = function (session, products) {
     var cards = [];
     var count = 9;
@@ -66,6 +76,65 @@ exports.getCardsAttachments = function (session, products) {
                 builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy'),
                 builder.CardAction.postBack(session, 'build', 'Build an outfit'),
                 builder.CardAction.postBack(session, 'add favourites product_id ' + products[i]._id, emoji.emojify(':heart:'))
+            ])
+        cards.push(newcard)
+    }
+    return cards;
+}
+
+exports.getFavouriteCardsAttachments = function (session, products) {
+    var cards = [];
+    var count = 9;
+
+    if (products.length < 9) {
+        count = products.length;
+    }
+
+    function encodeQueryData(data) {
+        let ret = [];
+        for (let d in data)
+            ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+        return ret.join('&');
+    }
+
+    for (var i = 0; i < count; i++) {
+        var productInfo = {
+            //'name': products[i].colour + products[i].subcategory,
+            'name': products[i].title,
+            'reference': session.message.address.user.id,
+            'product_id': products[i]._id,
+            'amount': products[i].price
+        };
+        var price = products[i].price;
+        function isInt(n) {
+            return n % 1 === 0;
+        }
+        function addZeroes(num) {
+            var value = Number(num);
+            var res = num.split(".");
+            if (num.indexOf('.') === -1) {
+                value = value.toFixed(2);
+                num = value.toString();
+            } else if (res[1].length < 3) {
+                value = value.toFixed(2);
+                num = value.toString();
+            }
+            return num;
+        }
+        if (isInt(price)) {
+            price = addZeroes(price);
+        }
+        var queryString = encodeQueryData(productInfo);
+        var newcard = new builder.HeroCard(session)
+            .title(products[i].title)
+            .subtitle("$" + price)
+            .images([
+                builder.CardImage.create(session, products[i].pictureURL)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy'),
+                builder.CardAction.postBack(session, 'build', 'Build an outfit'),
+                builder.CardAction.postBack(session, 'remove favourites product_id ' + products[i]._id, emoji.emojify('Remove :broken_heart:'))
             ])
         cards.push(newcard)
     }

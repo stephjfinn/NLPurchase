@@ -9,8 +9,23 @@
     },
     {
       "type":"postback",
-      "title":"My Favourites",
+      "title":"My favourites",
       "payload":"show me my favourites"
+    },
+    {
+      "type":"postback",
+      "title":"My purchases",
+      "payload":"show me my purchases"
+    },
+    {
+      "type":"postback",
+      "title":"Make style profile",
+      "payload":"style profile"
+    },
+    {
+      "type":"postback",
+      "title":"Give feedback",
+      "payload":"style profile"
     }
   ]
 }
