@@ -6,8 +6,8 @@ exports.getGreetingAttachment = function (session, greeting) {
         .text(greeting)
         .buttons([
             builder.CardAction.postBack(session, 'search', emoji.emojify('Help me shop :mag:')),
-            builder.CardAction.postBack(session, 'inspiration', emoji.emojify('Inspire me! :bulb:')),
-            builder.CardAction.postBack(session, 'style profile', emoji.emojify('Style profile :memo:'))
+            builder.CardAction.postBack(session, 'inspiration', emoji.emojify('Inspire me! :bulb:'))
+            //builder.CardAction.postBack(session, 'style profile', emoji.emojify('Style profile :memo:'))
         ]);
     var msg = new builder.Message(session).attachments([card]);
     return msg;

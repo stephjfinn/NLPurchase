@@ -19,11 +19,6 @@
     },
     {
       "type":"postback",
-      "title":"Make style profile",
-      "payload":"style profile"
-    },
-    {
-      "type":"postback",
       "title":"Give feedback",
       "payload":"I want to leave feedback"
     }

@@ -18,9 +18,9 @@ var wit = require('./wit');
 var client = wit.client();
 
 //BOOLEANS
-var fbMenusReset = false;
-var dropCollection = true;
-var doInserts = true;
+var fbMenusReset = process.env.FB_MENU_RESET;
+var dropCollection = process.env.DROP_COLLECTION;
+var doInserts = process.env.DO_INSERTS;
 
 //CREATE BOT SERVER
 var server = restify.createServer();
