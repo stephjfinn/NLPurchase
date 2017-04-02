@@ -80,10 +80,10 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.BOTFRAMEWORK_APPSECRET
 });
 var bot = new builder.UniversalBot(connector);
-server.get(/.*/, restify.serveStatic({
-    'directory': '.',
-    'default': 'index.html'
-}));
+//server.get(/.*/, restify.serveStatic({
+//    'directory': '.',
+ //   'default': 'index.html'
+//}));
 //listen for incoming messages
 server.post('/api/messages', connector.listen());
 //callbacks exposed for the business website to call on completion/failure of purchase
@@ -661,7 +661,7 @@ bot.dialog('/favourites', function (session) {
             }
             getFavouriteId(0);
         } else {
-            session.send(emoji.emojify("You haven't favourited anything... yet! :blush:"));
+            session.send(emoji.emojify("You haven't favourited anything... yet! :blush: Press the :heart: underneath items you like to favourite them."));
             session.endDialog();
         }
     })

@@ -133,7 +133,7 @@ exports.getFavouriteCardsAttachments = function (session, products) {
             ])
             .buttons([
                 builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy now'),
-                builder.CardAction.postBack(session, 'build', 'Build an outfit'),
+                //builder.CardAction.postBack(session, 'build', 'Build an outfit'),
                 builder.CardAction.postBack(session, 'remove favourites product_id ' + products[i]._id, emoji.emojify('Remove :broken_heart:'))
             ])
         cards.push(newcard)
