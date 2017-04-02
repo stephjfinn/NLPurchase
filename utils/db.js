@@ -31,7 +31,7 @@ process.on('SIGINT', function () {
   });
 });
 
-// BRING IN YOUR SCHEMAS & MODELS // For example 
+// BRING IN YOUR SCHEMAS & MODELS
 require('./model/product');
 require('./model/transaction');
 require('./model/favourite');

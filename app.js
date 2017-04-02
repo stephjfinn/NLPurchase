@@ -1,20 +1,20 @@
 //REQUIRES
-require('dotenv').config({ path: './keys.env' })
-var db = require('./db');
-var product = require('./controllers/products');
-var transaction = require('./controllers/transactions');
-var favourite = require('./controllers/favourites');
+//require('dotenv').config({ path: './keys.env' })
+var db = require('./utils/db');
+var wit = require('./utils/wit');
+var product = require('./utils/controllers/products');
+var transaction = require('./utils/controllers/transactions');
+var favourite = require('./utils/controllers/favourites');
+var categoryKeys = require('./utils/categoryKeys');
+var getAttachment = require('./utils/getAttachment');
+var setFbMenus = require('./fb_menus/setFbMenus');
+var insert = require('./utils/insertion');
 var restify = require('restify');
 var builder = require('botbuilder');
-var categoryKeys = require('./categoryKeys');
 var async = require('async');
-var insert = require('./insertion');
-var getAttachment = require('./getAttachment');
 var emoji = require('node-emoji');
-var setFbMenus = require('./fb_menus/setFbMenus');
 var fs = require('fs');
 const request = require('request');
-var wit = require('./wit');
 var client = wit.client();
 
 //BOOLEANS
@@ -46,30 +46,20 @@ if (dropCollection == true) {
 }
 //MAKE EBAY CALLS FOR PRODUCTS AND INSERT PRODUCTS INTO DB
 if (doInserts == true) {
-    //insert.doInsertion(womenShoes, 'womenShoes', function (results) {
-    //    console.log(results);
-    //    insert.doInsertion(menShoes, 'menShoes', function (results) {
-    //      console.log(results);
     insert.doInsertion(womenClothing, 'womenClothing', function (results) {
         console.log(results);
         insert.doInsertion(menClothing, 'menClothing', function (results) {
             console.log(results);
+            //search category 'men's clothing' for populating the trend wheels
             insert.doAltInsertion('1059', trends, function (results) {
                 console.log(results);
+                //search category 'women's clothing' for populating the trend wheels
                 insert.doAltInsertion('15724', trends, function (results) {
                     console.log(results);
-                    //        insert.doAltInsertion('1059', occasions, function (results) {
-                    //            console.log(results);
-                    //            insert.doAltInsertion('15724', occasions, function (results) {
-                    //                console.log(results);
-                    //            })
-                    //        })
                 })
             })
         })
     })
-    //    })
-    //})
 }
 
 //**BOT SETUP**
