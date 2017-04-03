@@ -100,7 +100,8 @@ function insertAltEbayItems(categoryId, keyword, items, callback) {
             } else {
                 insert = false;
             }
-            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+            var priceStr = items[i].sellingStatus.currentPrice.amount
+            db_item["price"] = +priceStr;
 
             if (insert == true) {
                 product.insert(db_item, function (product) {

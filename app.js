@@ -18,8 +18,8 @@ const request = require('request');
 var client = wit.client();
 
 //BOOLEANS
-var fbMenusReset = true;
-var dropCollection = false;
+var fbMenusReset = false;
+var dropCollection = true;
 var doInserts = true;
 
 //CREATE BOT SERVER
@@ -200,7 +200,7 @@ bot.dialog('/', function (session) {
                     session.send(reply);
                     break;
                 case "thanks":
-                    session.send("No problem, " + getFirstName(session.message.user.name) + "!" | emoji.emojify("Glad I could help! :blush:") | emoji.emojify("You are very welcome! :grinning:"));
+                    session.send("No problem, " + getFirstName(session.message.user.name) + "!" , emoji.emojify("Glad I could help! :blush:") , emoji.emojify("You are very welcome! :grinning:"));
                     break;
                 case "favourites":
                     if (data.entities.trigger != null && data.entities.add_or_remove != null) {
@@ -275,6 +275,8 @@ bot.dialog('/', function (session) {
                         "Can you say that again for me please?"]
                     session.send(reply);
             }
+        } else if (data.entities.colour || data.entities.category || data.entities.gender) {
+            session.beginDialog('/search', data);
         } else {
             var reply = ["I'm sorry, could you say that again?",
                 "I don't quite get what you mean by that, could you repeat it?",
@@ -284,7 +286,7 @@ bot.dialog('/', function (session) {
     }
 });
 
-bot.beginDialogAction('search', '/search', { matches: /^search/i });
+//bot.beginDialogAction('search', '/search', { matches: /^search/i });
 bot.dialog('/search', [
     function (session, data) {
         session.sendTyping();
