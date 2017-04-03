@@ -19,8 +19,8 @@ var client = wit.client();
 
 //BOOLEANS
 var fbMenusReset = false;
-var dropCollection = true;
-var doInserts = true;
+var dropCollection = false;
+var doInserts = false;
 
 //CREATE BOT SERVER
 var server = restify.createServer();
@@ -449,6 +449,9 @@ bot.dialog('/ensureSearchEntities', [
             function dialogHandler(data) {
                 if (data.entities.number != null) {
                     session.dialogData.search.price = data.entities.number[0].value;
+                    if (typeof data.entities['quantifier'] !== 'undefined') {
+                        session.dialogData.search.quantifier = data.entities.quantifier[0].value;
+                    }
                     session.endDialogWithResult({ response: session.dialogData.search });
                 } else {
                     session.replaceDialog("/");

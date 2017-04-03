@@ -58,8 +58,8 @@ function queryBuilder(queryData) {
                 query.price = {'$gt': price}
             }
         } else {
-            var less_than = price + 100;
-            var greater_than = price - 100;
+            var less_than = price + 1000;
+            var greater_than = price - 1000;
             query.price = {'$gt': greater_than, '$lt': less_than}
         }
     }
