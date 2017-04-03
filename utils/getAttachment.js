@@ -46,25 +46,7 @@ exports.getCardsAttachments = function (session, products) {
             'product_id': products[i]._id,
             'amount': products[i].price
         };
-        var price = products[i].price;
-        function isInt(n) {
-            return n % 1 === 0;
-        }
-        function addZeroes(num) {
-            var value = Number(num);
-            var res = num.split(".");
-            if (num.indexOf('.') === -1) {
-                value = value.toFixed(2);
-                num = value.toString();
-            } else if (res[1].length < 3) {
-                value = value.toFixed(2);
-                num = value.toString();
-            }
-            return num;
-        }
-        if (isInt(price)) {
-            price = addZeroes(price);
-        }
+        var price = products[i].price / 100;
         var queryString = encodeQueryData(productInfo);
         var newcard = new builder.HeroCard(session)
             .title(products[i].title)
@@ -75,6 +57,30 @@ exports.getCardsAttachments = function (session, products) {
             .buttons([
                 builder.CardAction.openUrl(session, 'http://nlpurchase.paperplane.io/index.html?' + queryString, 'Buy now'),
                 //builder.CardAction.postBack(session, 'build', 'Build an outfit'),
+                builder.CardAction.postBack(session, 'add favourites product_id ' + products[i]._id, emoji.emojify(':heart:'))
+            ])
+        cards.push(newcard)
+    }
+    return cards;
+}
+
+exports.getTransactionCardsAttachments = function (session, products) {
+    var cards = [];
+    var count = 9;
+
+    if (products.length < 9) {
+        count = products.length;
+    }
+
+    for (var i = 0; i < count; i++) {
+        var price = products[i].price / 100;
+        var newcard = new builder.HeroCard(session)
+            .title(products[i].title)
+            .subtitle("$" + price)
+            .images([
+                builder.CardImage.create(session, products[i].pictureURL)
+            ])
+            .buttons([
                 builder.CardAction.postBack(session, 'add favourites product_id ' + products[i]._id, emoji.emojify(':heart:'))
             ])
         cards.push(newcard)
@@ -105,25 +111,7 @@ exports.getFavouriteCardsAttachments = function (session, products) {
             'product_id': products[i]._id,
             'amount': products[i].price
         };
-        var price = products[i].price;
-        function isInt(n) {
-            return n % 1 === 0;
-        }
-        function addZeroes(num) {
-            var value = Number(num);
-            var res = num.split(".");
-            if (num.indexOf('.') === -1) {
-                value = value.toFixed(2);
-                num = value.toString();
-            } else if (res[1].length < 3) {
-                value = value.toFixed(2);
-                num = value.toString();
-            }
-            return num;
-        }
-        if (isInt(price)) {
-            price = addZeroes(price);
-        }
+        var price = products[i].price / 100;
         var queryString = encodeQueryData(productInfo);
         var newcard = new builder.HeroCard(session)
             .title(products[i].title)

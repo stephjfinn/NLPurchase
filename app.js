@@ -248,7 +248,7 @@ bot.dialog('/', function (session) {
                                             callback(reply);
                                         }
                                         var getCards = function (callback) {
-                                            var cards = getAttachment.getCardsAttachments(session, products);
+                                            var cards = getAttachment.getTransactionCardsAttachments(session, products);
                                             callback(cards, sendReply);
                                         };
                                         getCards(getReply);

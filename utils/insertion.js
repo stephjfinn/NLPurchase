@@ -100,8 +100,10 @@ function insertAltEbayItems(categoryId, keyword, items, callback) {
             } else {
                 insert = false;
             }
-            var priceStr = items[i].sellingStatus.currentPrice.amount
-            db_item["price"] = +priceStr;
+            var priceStr = items[i].sellingStatus.currentPrice.amount;
+            var priceNum = +priceStr;
+            var priceInt = priceNum * 100;
+            db_item["price"] = priceInt;
 
             if (insert == true) {
                 product.insert(db_item, function (product) {
@@ -148,7 +150,10 @@ function insertEbayItems(categorySetName, items, colour, category, callback) {
             } else {
                 insert = false;
             }
-            db_item["price"] = items[i].sellingStatus.currentPrice.amount;
+            var priceStr = items[i].sellingStatus.currentPrice.amount;
+            var priceNum = +priceStr;
+            var priceInt = priceNum * 100;
+            db_item["price"] = priceInt;
 
             if (insert == true) {
                 product.insert(db_item, function (product) {

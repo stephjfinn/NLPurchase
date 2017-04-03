@@ -50,15 +50,16 @@ function queryBuilder(queryData) {
         query.colour = queryData.colour;
     }
     if (queryData.price) {
+        var price = queryData.price*100
         if (queryData.quantifier) {
             if (queryData.quantifier == 'under') {
-                query.price = {'$lt': queryData.price}
+                query.price = {'$lt': price}
             } else {
-                query.price = {'$gt': queryData.price}
+                query.price = {'$gt': price}
             }
         } else {
-            var less_than = queryData.price + 10;
-            var greater_than = queryData.price - 10;
+            var less_than = price + 100;
+            var greater_than = price - 100;
             query.price = {'$gt': greater_than, '$lt': less_than}
         }
     }
