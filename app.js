@@ -1,5 +1,5 @@
 //REQUIRES
-require('dotenv').config({ path: './keys.env' })
+//require('dotenv').config({ path: './keys.env' })
 var db = require('./utils/db');
 var wit = require('./utils/wit');
 var product = require('./utils/controllers/products');
