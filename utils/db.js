@@ -35,3 +35,4 @@ process.on('SIGINT', function () {
 require('./model/product');
 require('./model/transaction');
 require('./model/favourite');
+require('./model/user');

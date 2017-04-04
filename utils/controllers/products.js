@@ -47,27 +47,33 @@ function queryBuilder(queryData) {
         query.category = queryData.category;
     }
     if (queryData.colour) {
-        query.colour = queryData.colour;
+        if (queryData.colour != "any") {
+            query.colour = queryData.colour;
+        } else {
+            queryData.colour = "Multi-Color";
+        }
     }
     if (queryData.price) {
-        var price = queryData.price*100
-        if (queryData.quantifier) {
-            if (queryData.quantifier == 'under') {
-                query.price = {'$lt': price}
+        if (queryData.price != "any") {
+            var price = queryData.price * 100
+            if (queryData.quantifier) {
+                if (queryData.quantifier == 'under') {
+                    query.price = { '$lt': price }
+                } else {
+                    query.price = { '$gt': price }
+                }
             } else {
-                query.price = {'$gt': price}
+                var less_than = price + 1000;
+                var greater_than = price - 1000;
+                query.price = { '$gt': greater_than, '$lt': less_than }
             }
-        } else {
-            var less_than = price + 1000;
-            var greater_than = price - 1000;
-            query.price = {'$gt': greater_than, '$lt': less_than}
         }
     }
     return query;
 }
 
 exports.findByProductIdArray = function (productIdArray, callback) {
-    Product.find({'_id': { $in: productIdArray}}, function (err, products) {
+    Product.find({ '_id': { $in: productIdArray } }, function (err, products) {
         if (err) {
             console.log(err);
             callback(null);

@@ -23,6 +23,16 @@ exports.getFeedbackAttachment = function (session, text) {
     return msg;
 };
 
+exports.getColourAttachment = function (session, text) {
+    var card = new builder.HeroCard(session)
+        .text(text)
+        .buttons([
+            builder.CardAction.openUrl(session, 'https://goo.gl/forms/NyboP9fu8pBXbesf2', emoji.emojify('Give Feedback :memo:'))
+        ]);
+    var msg = new builder.Message(session).attachments([card]);
+    return msg;
+};
+
 exports.getCardsAttachments = function (session, products) {
     var cards = [];
     var count = 9;

@@ -3,7 +3,7 @@
   "thread_state":"new_thread",
   "call_to_actions":[
     {
-      "payload":"hello"
+      "payload":"first_time_user"
     }
   ]
 }
