@@ -1,0 +1,59 @@
+<html>
+	<head>
+		<!--<title>NLPurchase</title>-->
+	</head>
+	<body>
+		<script type="text/javascript" src="https://www.simplify.com/commerce/simplify.pay.js"></script>
+		<script>
+			var name;
+			var product_id;
+			var reference;
+			var amount;
+			window.onload = function(){
+			var query = window.location.search.substring(1);
+			function getQueryVariable(variable) {
+				var vars = query.split("&");
+				for (var i = 0; i < vars.length; i++) {
+					var pair = vars[i].split("=");
+					if (pair[0] == variable) {
+						var decoded = decodeURI(pair[1]);
+						return decoded.replace("'","");
+					}
+				}
+				return null;
+			}
+			function getVars(callback) {
+				name = (getQueryVariable('name'));
+				name = name.replace(/[.,\/#!$%\^&\*;:{}=\-_`'"~()]/g,"");
+				reference = (getQueryVariable('reference'));
+				amount = (getQueryVariable('amount'));
+				product_id = (getQueryVariable('product_id'));
+				reference += "PID" + product_id;
+				if (name && product_id && reference && amount){
+					SimplifyCommerce.hostedPayments(
+						function(response) {
+						
+						},
+						{
+							name: name,
+							reference: reference,
+							amount: amount,
+							masterpass: "true",
+							address: ""
+					});
+					callback();
+				}
+			}
+				function pressBtn() {
+					document.getElementById("buyButton").click();
+				}
+				getVars(pressBtn);
+			}
+						</script>
+						<button id="buyButton" data-sc-key="sbpb_OGUzNzRkMWEtNjk0Ni00OGZmLWIzZDQtNDFhMWY0YzUzZWFi"
+							data-redirect-url="http://nlpurchase.paperplane.io/checkout.html"
+							data-color="#3b5998">
+							Loading, please wait...
+						</button>
+					</body>
+				</html>
