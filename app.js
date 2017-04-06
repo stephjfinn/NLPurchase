@@ -84,7 +84,7 @@ server.get('/api/callbackOk', function (req, res, next) {
             console.log("Inserted 1 transaction");
             var receiptArray = {};
             receiptArray.timeStamp = Math.floor(Date.now() / 1000);
-            user.find([userId], function (users) {
+            user.find(userId, function (users) {
                 if (users != null) {
                     receiptArray.userName = users[0].userName;
                 } else {

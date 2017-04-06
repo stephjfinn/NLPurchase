@@ -28,7 +28,7 @@ exports.insert = function (userId, userName, callback) {
 }
 
 exports.find = function (userID, callback) {
-    User.find({"user_id":userID }, function (err, users) {
+    User.find({"userId":userID }, function (err, users) {
         if (err) {
             console.log(err);
             callback(null);
