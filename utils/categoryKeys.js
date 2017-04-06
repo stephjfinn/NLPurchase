@@ -95,6 +95,40 @@ var trendWheel = [
     }
 ]
 
+var trendWheelMen = [
+    {
+        title: 'Timeless Trenches ',
+        subtitle: 'So satisfying to ditch your tired winter coat for a fresh, spring one!',
+        url: 'https://theidleman.com/manual/wp-content/uploads/2016/02/Optimized-download-16.jpg',
+        btnText: 'Search trench coats',
+        postBack: 'Show me trendy trench coats'
+    },
+    {
+        title: 'Seamless Stripes',
+        subtitle: 'Hit refresh on a time-honoured classic trend with an ode to colour',
+        url: 'https://smhttp-ssl-33667.nexcesscdn.net/manual/wp-content/uploads/2015/08/how-to-wear-stripes-three-ways.jpg',
+        postBack: 'Show me trendy stripes'
+    },
+    {
+        title: 'Khaki Gets Cool',
+        subtitle: 'Military chic or safari suave; khaki has something for everyone',
+        url: 'https://fashionsecrets254.files.wordpress.com/2014/08/wpid-khaki_pants_business_men-e13778206529651.jpg',
+        postBack: 'Show me trendy khaki'
+    },
+    {
+        title: 'Unnaturally Neon',
+        subtitle: 'Electric, fluorescent, vivid, eye-catching. Get your staple piece',
+        url: 'http://3.bp.blogspot.com/-X4VZQyelcHM/UVLa-OKGSLI/AAAAAAAABYw/oqfyPgavfuM/s1600/1100.jpg',
+        postBack: 'Show me trendy neon'
+    },
+    {
+        title: 'Forever Floral',
+        subtitle: 'Eye-popping florals to energise your summer trunks to your office wear',
+        url: 'https://www.thetrendspotter.net/wp-content/uploads/2014/01/floral-tops.jpg',
+        postBack: 'Show me trendy floral'
+    }
+]
+
 exports.womenShoes = womenShoes;
 exports.womenClothing = womenClothing;
 exports.menShoes = menShoes;
@@ -102,3 +136,4 @@ exports.menClothing = menClothing;
 exports.trends = trends;
 exports.occasions = occasions;
 exports.trendWheel = trendWheel;
+exports.trendWheelMen = trendWheelMen;

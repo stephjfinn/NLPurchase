@@ -71,12 +71,8 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.BOTFRAMEWORK_APPSECRET
 });
 var bot = new builder.UniversalBot(connector);
-//server.get(/.*/, restify.serveStatic({
-//    'directory': '.',
-//   'default': 'index.html'
-//}));
-//listen for incoming messages
 server.post('/api/messages', connector.listen());
+
 //callbacks exposed for the business website to call on completion/failure of purchase
 server.get('/api/callbackOk', function (req, res, next) {
     var query = req._url.query;
@@ -86,7 +82,23 @@ server.get('/api/callbackOk', function (req, res, next) {
         var transactionData = { 'userId': userId, 'productId': productId };
         transaction.insert(transactionData, function (transactions) {
             console.log("Inserted 1 transaction");
-            sendTextMessage(userId, emoji.emojify("Thank you! Your super cool purchase is complete and on its way to your wardrobe :grin:"));
+            var receiptArray = {};
+            receiptArray.timeStamp = Math.floor(Date.now() / 1000);
+            user.find(userId, function (users) {
+                if (users != null) {
+                    receiptArray.userName = users[0].userName;
+                } else {
+                    receiptArray.userName = "Missing Value";
+                }
+                product.findByProductIdArray([productId], function (products) {
+                    receiptArray.orderNum = products[0]._id;
+                    receiptArray.title = products[0].title;
+                    var price = products[i].price / 100;
+                    receiptArray.price = price;
+                    receiptArray.URL = products[0].pictureURL;
+                })
+            })
+            sendTextMessage(userId, receiptArray);
             res.status(200);
         })
     } else {
@@ -262,12 +274,19 @@ bot.dialog('/', function (session) {
                     session.send(getAttachment.getFeedbackAttachment(session, reply));
                     break;
                 case "displayCategories":
-                    var options = ["coats", "dresses", "jeans", "jumpsuits", "pants", "shorts", "skirts", "suits","hoodies", "tshirts", "tops"];
+                    var options = ["coats", "dresses", "jeans", "jumpsuits", "pants", "shorts", "skirts", "suits", "hoodies", "tshirts", "tops"];
                     session.send(getAttachment.getQuickReplies(session, "No problem, these are all the items I'm stocking at the moment!", options));
                     break;
                 case "feedback":
                     var reply = "Please click the button below to leave feedback."
                     session.send(getAttachment.getFeedbackAttachment(session, reply));
+                    break;
+                case "somethingElse":
+                    var reply = "Sure thing! What else can I do for you?"
+                    session.send(getAttachment.getGreetingAttachment(session, reply));
+                    break;
+                case "cancel":
+                    session.beginDialog('/cancel');
                     break;
                 default:
                     var reply = ["I'm sorry I didn't understand that, could you say that in a different way?",
@@ -293,9 +312,9 @@ bot.dialog('/searchDefault', function (session, args) {
         if (data.entities.intent != null) {
             session.replaceDialog("/");
         } else {
-            var reply = "I'm afraid don't sell that item yet, please specify a different item."
+            var reply = "I’m sorry, I don’t sell that item...yet!"
             session.send(reply);
-            session.endDialogWithResult({ response: args });
+            session.replaceDialog("/ensureSearchEntities", args);
         }
     }
 })
@@ -338,7 +357,7 @@ bot.dialog('/search', [
             product.find(session.dialogData.search, function (products) {
                 if (products !== null) {
                     var sendReply = function (reply) {
-                        session.send(emoji.emojify("How 'bout these? :grin:"));
+                        session.send(emoji.emojify("How 'bout these? :grin:"), "Try these ones out:", "Here's what I found!");
                         setTimeout(function () {
                             session.send(reply);
                             if (session.userData.firstTime == true) {
@@ -393,11 +412,12 @@ bot.dialog('/ensureSearchEntities', [
                 if (session.dialogData.search.gender == "woman") {
                     //var options = ["dresses", "jeans", "skirts", "hoodies"];
                     //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
-                    builder.Prompts.text(session, "In which category? e.g. dresses/jeans/skirts/hoodies. Feel free to type your own.");
+                    builder.Prompts.text(session, "In which clothing category? e.g. dresses/jeans/skirts/hoodies. Feel free to type your own.");
+
                 } else {
                     //var options = ["coats", "pants", "sweaters", "casual shirts"];
                     //session.send(getAttachment.getQuickReplies(session, "In which category? Feel free to type your own.", options));
-                    builder.Prompts.text(session, "In which category? e.g. coats/pants/sweaters/shirts. Feel free to type your own.");
+                    builder.Prompts.text(session, "In which clothing category? e.g. coats/pants/sweaters/shirts. Feel free to type your own.");
                 }
             } else {
                 next();
@@ -553,7 +573,11 @@ bot.dialog('/inspiration', [
             callback(reply);
         }
         var getCards = function (callback) {
-            var cards = getAttachment.getKeywordsCardsAttachments(categoryKeys.trendWheel, session);
+            if (session.userData.gender == 'woman') {
+                var cards = getAttachment.getKeywordsCardsAttachments(categoryKeys.trendWheel, session);
+            } else {
+                var cards = getAttachment.getKeywordsCardsAttachments(categoryKeys.trendWheelMen, session);
+            }
             callback(cards, sendReply);
         };
         getCards(getReply);
@@ -619,7 +643,7 @@ bot.dialog('/displayTrendCarousel', [
         session.sendTyping();
         session.dialogData.keyword = keyword;
         if (!session.userData.gender) {
-            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", emoji.emojify("man :man:|woman :woman:"));
+            builder.Prompts.choice(session, "Are we shopping for a man or a woman?", emoji.emojify("man|woman"));
         } else {
             next();
         }
@@ -664,7 +688,7 @@ bot.dialog('/displayTrendCarousel', [
 bot.beginDialogAction('first_time_user', '/first_time_user', { matches: /^first_time_user/i });
 bot.dialog('/first_time_user', function (session) {
     session.userData.firstTime = true;
-    user.insert(session.message.address.user.id, function () {
+    user.insert(session.message.address.user.id, session.message.user.name, function () {
         session.clearDialogStack();
         var reply = getGreeting(session);
         session.send(reply);
@@ -747,8 +771,31 @@ bot.dialog('/favourites', function (session) {
     session.endDialog();
 });
 
-function sendTextMessage(sender, text) {
-    let messageData = { text: text }
+function sendTextMessage(sender, array) {
+    let messageData = {
+        "attachment": {
+            "type": "template",
+            "payload": {
+                "template_type": "receipt",
+                "recipient_name": array.userName,
+                "order_number": array.orderNum,
+                "currency": "USD",
+                "payment_method": "Simplify MasterCard",
+                "timestamp": array.timestamp,
+                "elements": [
+                    {
+                        "title": array.title,
+                        "price": array.price,
+                        "currency": "USD",
+                        "image_url": array.URL
+                    }
+                ],
+                "summary": {
+                    "total_cost": array.price
+                },
+            }
+        }
+    }
 
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
