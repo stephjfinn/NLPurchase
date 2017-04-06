@@ -93,7 +93,7 @@ server.get('/api/callbackOk', function (req, res, next) {
                 product.findByProductIdArray([productId], function (products) {
                     receiptArray.orderNum = products[0]._id;
                     receiptArray.title = products[0].title;
-                    var price = products[i].price / 100;
+                    var price = products[0].price / 100;
                     receiptArray.price = price;
                     receiptArray.URL = products[0].pictureURL;
                 })
