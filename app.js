@@ -285,6 +285,9 @@ bot.dialog('/', function (session) {
                     var reply = "Sure thing! What else can I do for you?"
                     session.send(getAttachment.getGreetingAttachment(session, reply));
                     break;
+                case "dislike":
+                    var reply = "I'm sorry about that. Why don't we search for something else?"
+                    session.send(getAttachment.getGreetingAttachment(session, reply));
                 case "cancel":
                     session.beginDialog('/cancel');
                     break;
@@ -721,7 +724,7 @@ bot.dialog('/joke', function (session) {
 
 bot.beginDialogAction('help', '/help', { matches: /^help/i });
 bot.dialog('/help', function (session) {
-    var reply = "I'm NLPurchase, you can talk to me to help you find items that are perfect for you or as a gift!" +
+    var reply = "I can help you search for clothes that are perfect for you or as a gift!" +
         " Try explaining to me what you would like to do in a sentence (e.g. \"I really need a gift for my mother-in-law, all I know is she likes the colour pink\")" +
         " and I'll help you out. Use the menu in the bottom left hand corner to get around, or select one of the buttons below to try out a more guided experience.";
     session.send(getAttachment.getGreetingAttachment(session, reply));
