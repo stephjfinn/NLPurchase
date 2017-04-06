@@ -96,9 +96,9 @@ server.get('/api/callbackOk', function (req, res, next) {
                     var price = products[0].price / 100;
                     receiptArray.price = price;
                     receiptArray.URL = products[0].pictureURL;
+                    sendTextMessage(userId, receiptArray);
                 })
             })
-            sendTextMessage(userId, receiptArray);
             res.status(200);
         })
     } else {
